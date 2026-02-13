@@ -139,7 +139,6 @@ class TestSyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "my_workflow"
-        assert span.attributes["traceloop.span.kind"] == "workflow"
         assert span.attributes["gen_ai.operation.name"] == "workflow"
 
     def test_task_creates_span(self, exporter):
@@ -150,7 +149,6 @@ class TestSyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "my_task"
-        assert span.attributes["traceloop.span.kind"] == "task"
         assert span.attributes["gen_ai.operation.name"] == "task"
 
     def test_agent_creates_span(self, exporter):
@@ -161,7 +159,6 @@ class TestSyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "my_agent"
-        assert span.attributes["traceloop.span.kind"] == "agent"
         assert span.attributes["gen_ai.operation.name"] == "agent"
 
     def test_tool_creates_span(self, exporter):
@@ -172,7 +169,6 @@ class TestSyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "my_tool"
-        assert span.attributes["traceloop.span.kind"] == "tool"
         assert span.attributes["gen_ai.operation.name"] == "tool"
 
     def test_input_capture_single_arg(self, exporter):
@@ -180,27 +176,27 @@ class TestSyncDecorators:
         spans = exporter.get_finished_spans()
         span = spans[0]
         # Single positional arg is captured directly
-        assert json.loads(span.attributes["traceloop.entity.input"]) == 42
+        assert json.loads(span.attributes["gen_ai.entity.input"]) == 42
 
     def test_input_capture_multiple_args(self, exporter):
         sync_tool(3, 4)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = json.loads(span.attributes["traceloop.entity.input"])
+        captured = json.loads(span.attributes["gen_ai.entity.input"])
         assert captured == [3, 4]
 
     def test_input_capture_kwargs_only(self, exporter):
         kwargs_workflow_fn(key="x", value=99)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = json.loads(span.attributes["traceloop.entity.input"])
+        captured = json.loads(span.attributes["gen_ai.entity.input"])
         assert captured == {"key": "x", "value": 99}
 
     def test_input_capture_mixed_args_kwargs(self, exporter):
         mixed_args_workflow_fn(1, 2, flag=True)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = json.loads(span.attributes["traceloop.entity.input"])
+        captured = json.loads(span.attributes["gen_ai.entity.input"])
         assert captured == {"args": [1, 2], "kwargs": {"flag": True}}
 
     def test_output_capture(self, exporter):
@@ -208,14 +204,14 @@ class TestSyncDecorators:
         assert result == 6
         spans = exporter.get_finished_spans()
         span = spans[0]
-        assert json.loads(span.attributes["traceloop.entity.output"]) == 6
+        assert json.loads(span.attributes["gen_ai.entity.output"]) == 6
 
     def test_output_capture_dict(self, exporter):
         result = kwargs_workflow_fn(key="x", value=99)
         assert result == {"key": "x", "value": 99}
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = json.loads(span.attributes["traceloop.entity.output"])
+        captured = json.loads(span.attributes["gen_ai.entity.output"])
         assert captured == {"key": "x", "value": 99}
 
     def test_error_sets_span_status(self, exporter):
@@ -249,13 +245,13 @@ class TestSyncDecorators:
         versioned_workflow_fn()
         spans = exporter.get_finished_spans()
         span = spans[0]
-        assert span.attributes["traceloop.entity.version"] == 3
+        assert span.attributes["gen_ai.entity.version"] == 3
 
     def test_no_version_attribute_when_not_set(self, exporter):
         sync_workflow(1)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        assert "traceloop.entity.version" not in span.attributes
+        assert "gen_ai.entity.version" not in span.attributes
 
 
 class TestParentChildRelationships:
@@ -299,7 +295,7 @@ class TestAsyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "async_workflow"
-        assert span.attributes["traceloop.span.kind"] == "workflow"
+        assert span.attributes["gen_ai.operation.name"] == "workflow"
 
     @pytest.mark.asyncio
     async def test_async_task(self, exporter):
@@ -310,7 +306,7 @@ class TestAsyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "async_task"
-        assert span.attributes["traceloop.span.kind"] == "task"
+        assert span.attributes["gen_ai.operation.name"] == "task"
 
     @pytest.mark.asyncio
     async def test_async_agent(self, exporter):
@@ -321,7 +317,7 @@ class TestAsyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "async_agent"
-        assert span.attributes["traceloop.span.kind"] == "agent"
+        assert span.attributes["gen_ai.operation.name"] == "agent"
 
     @pytest.mark.asyncio
     async def test_async_tool(self, exporter):
@@ -332,7 +328,7 @@ class TestAsyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "async_tool"
-        assert span.attributes["traceloop.span.kind"] == "tool"
+        assert span.attributes["gen_ai.operation.name"] == "tool"
 
     @pytest.mark.asyncio
     async def test_async_output_capture(self, exporter):
@@ -341,14 +337,14 @@ class TestAsyncDecorators:
 
         spans = exporter.get_finished_spans()
         span = spans[0]
-        assert json.loads(span.attributes["traceloop.entity.output"]) == 17
+        assert json.loads(span.attributes["gen_ai.entity.output"]) == 17
 
     @pytest.mark.asyncio
     async def test_async_input_capture(self, exporter):
         await async_tool_fn(10, 20)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = json.loads(span.attributes["traceloop.entity.input"])
+        captured = json.loads(span.attributes["gen_ai.entity.input"])
         assert captured == [10, 20]
 
     @pytest.mark.asyncio
@@ -390,7 +386,7 @@ class TestGeneratorDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "gen_tool"
-        assert span.attributes["traceloop.span.kind"] == "tool"
+        assert span.attributes["gen_ai.operation.name"] == "tool"
 
     @pytest.mark.asyncio
     async def test_async_generator(self, exporter):
@@ -403,7 +399,7 @@ class TestGeneratorDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "async_gen_tool"
-        assert span.attributes["traceloop.span.kind"] == "tool"
+        assert span.attributes["gen_ai.operation.name"] == "tool"
 
     def test_sync_generator_error(self, exporter):
         gen = generator_error_tool_fn()
@@ -468,7 +464,7 @@ class TestEdgeCases:
         spans = exporter.get_finished_spans()
         span = spans[0]
         # _set_output skips None results
-        assert "traceloop.entity.output" not in span.attributes
+        assert "gen_ai.entity.output" not in span.attributes
 
     def test_no_args_no_input_attribute(self, exporter):
         @workflow(name="no_args")
@@ -479,7 +475,7 @@ class TestEdgeCases:
         spans = exporter.get_finished_spans()
         span = spans[0]
         # _set_input skips when no args and no kwargs
-        assert "traceloop.entity.input" not in span.attributes
+        assert "gen_ai.entity.input" not in span.attributes
 
     def test_large_input_is_truncated(self, exporter):
         @workflow(name="big_input")
@@ -490,7 +486,7 @@ class TestEdgeCases:
         big_input_fn(big_data)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = span.attributes["traceloop.entity.input"]
+        captured = span.attributes["gen_ai.entity.input"]
         assert len(captured) <= 10_100  # 10000 + truncation marker + quotes
         assert "truncated" in captured
 
@@ -502,7 +498,7 @@ class TestEdgeCases:
         big_output_fn()
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = span.attributes["traceloop.entity.output"]
+        captured = span.attributes["gen_ai.entity.output"]
         assert len(captured) <= 10_100
         assert "truncated" in captured
 

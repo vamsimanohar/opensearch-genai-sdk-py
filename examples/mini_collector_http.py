@@ -70,7 +70,7 @@ def print_span(span, resource_attrs: dict):
         else:
             attrs[key] = str(val)
 
-    span_kind = attrs.get("traceloop.span.kind", "")
+    span_kind = attrs.get("gen_ai.operation.name", "")
     is_score = attrs.get("opensearch.score", False)
     kind_label = SPAN_KIND_MAP.get(span_kind, f"{RED}score{RESET}" if is_score else "internal")
 
@@ -88,7 +88,7 @@ def print_span(span, resource_attrs: dict):
     print(f"  {DIM}Service: {service}{RESET}")
 
     # Print interesting attributes
-    for key in ["traceloop.entity.input", "traceloop.entity.output",
+    for key in ["gen_ai.entity.input", "gen_ai.entity.output",
                 "score.name", "score.value", "score.source", "score.rationale",
                 "score.trace_id"]:
         if key in attrs:

@@ -33,12 +33,10 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_ENDPOINT = "http://localhost:21890/opentelemetry/v1/traces"
 
-# Entry point groups to discover instrumentors from.
-# "opentelemetry_instrumentor" = OpenLLMetry (Traceloop) + official OTEL instrumentors
-# "openinference_instrumentor" = OpenInference (Arize/Phoenix) instrumentors
+# Entry point group to discover instrumentors from.
+# OpenLLMetry + official OTEL instrumentors register under this group.
 _INSTRUMENTOR_GROUPS = [
     "opentelemetry_instrumentor",
-    "openinference_instrumentor",
 ]
 
 
