@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-# Span kind values following OpenLLMetry/OTEL GenAI conventions
+# Span kind values following OTEL GenAI semantic conventions
 SPAN_KIND_WORKFLOW = "workflow"
 SPAN_KIND_TASK = "task"
 SPAN_KIND_AGENT = "agent"
@@ -208,12 +208,10 @@ def _set_span_attributes(
     kwargs: dict,
 ) -> None:
     """Set standard attributes on a span."""
-    # GenAI / traceloop span kind convention
-    span.set_attribute("traceloop.span.kind", span_kind)
     span.set_attribute("gen_ai.operation.name", span_kind)
 
     if version is not None:
-        span.set_attribute("traceloop.entity.version", version)
+        span.set_attribute("gen_ai.entity.version", version)
 
     # Capture input (best-effort, don't fail if serialization fails)
     _set_input(span, args, kwargs)
@@ -234,7 +232,7 @@ def _set_input(span: trace.Span, args: tuple, kwargs: dict) -> None:
             # Truncate to avoid oversized attributes
             if len(serialized) > 10_000:
                 serialized = serialized[:10_000] + "...(truncated)"
-            span.set_attribute("traceloop.entity.input", serialized)
+            span.set_attribute("gen_ai.entity.input", serialized)
     except Exception:
         pass
 
@@ -247,6 +245,6 @@ def _set_output(span: trace.Span, result: Any) -> None:
         serialized = json.dumps(result, default=str)
         if len(serialized) > 10_000:
             serialized = serialized[:10_000] + "...(truncated)"
-        span.set_attribute("traceloop.entity.output", serialized)
+        span.set_attribute("gen_ai.entity.output", serialized)
     except Exception:
         pass
