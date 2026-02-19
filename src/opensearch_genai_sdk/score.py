@@ -1,8 +1,11 @@
 """Score submission for OpenSearch AI observability.
 
-Sends evaluation scores and human feedback as OTEL spans through the
-same exporter pipeline as all other traces. Data Prepper routes these
-spans to the ai-scores index based on the `opensearch.score` attribute.
+Sends evaluation scores as OTEL spans using gen_ai.evaluation.*
+semantic convention attributes. Supports three scoring levels:
+
+- **Span-level:** trace_id + span_id — score a specific span
+- **Trace-level:** trace_id only — score the entire trace
+- **Session-level:** conversation_id — score across traces
 
 This keeps everything in OTEL — no separate OpenSearch client needed
 for scoring. Same SigV4 auth, same exporter, same pipeline.
@@ -11,9 +14,7 @@ for scoring. Same SigV4 auth, same exporter, same pipeline.
 from __future__ import annotations
 
 import logging
-import os
-import time
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Optional
 
 from opentelemetry import trace
 
@@ -28,70 +29,91 @@ def score(
     *,
     trace_id: Optional[str] = None,
     span_id: Optional[str] = None,
+    conversation_id: Optional[str] = None,
     label: Optional[str] = None,
-    data_type: Literal["NUMERIC", "CATEGORICAL", "BOOLEAN"] = "NUMERIC",
+    explanation: Optional[str] = None,
+    response_id: Optional[str] = None,
     source: str = "sdk",
-    comment: Optional[str] = None,
-    rationale: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
-    project: Optional[str] = None,
 ) -> None:
-    """Submit a score as an OTEL span.
+    """Submit an evaluation score as an OTEL span.
 
-    Creates a span with score attributes that flows through the same
-    OTLP exporter as all other traces. Data Prepper can route these
-    to a dedicated index based on the ``opensearch.score`` marker.
+    Creates a span with gen_ai.evaluation.* attributes that flows
+    through the same OTLP exporter as all other traces.
+
+    Three scoring levels:
+    - **Span-level:** pass trace_id + span_id to score a specific span.
+    - **Trace-level:** pass only trace_id to score the entire trace.
+    - **Session-level:** pass conversation_id to score across traces.
 
     Args:
-        name: Score name (e.g., "relevance", "factuality", "toxicity").
-        value: Numeric score value (0.0 to 1.0 for NUMERIC).
+        name: Evaluation metric name (e.g., "relevance", "factuality").
+        value: Numeric score value.
         trace_id: The trace ID being scored. Stored as an attribute
             (does NOT become the span's own trace ID).
-        span_id: Optional span ID for span-level scoring.
-        label: Categorical label (for CATEGORICAL scores).
-        data_type: Score type — NUMERIC, CATEGORICAL, or BOOLEAN.
+        span_id: Span ID for span-level scoring.
+        conversation_id: Conversation/session ID for session-level scoring.
+        label: Human-readable label (e.g., "pass", "relevant", "satisfied").
+        explanation: Evaluator justification or rationale.
+        response_id: Completion ID for correlation with a specific response.
         source: Who created the score — "sdk", "human", "llm-judge", "heuristic".
-        comment: Optional human-readable comment.
-        rationale: Optional explanation from an LLM judge.
         metadata: Optional arbitrary metadata.
-        project: Project name. Defaults to OPENSEARCH_PROJECT env var.
 
     Example:
         from opensearch_genai_sdk import score
 
+        # Span-level scoring
         score(
-            name="relevance",
+            name="accuracy",
             value=0.95,
             trace_id="abc123",
+            span_id="def456",
+            explanation="Weather data is correct",
+            source="heuristic",
+        )
+
+        # Trace-level scoring
+        score(
+            name="relevance",
+            value=0.92,
+            trace_id="abc123",
+            explanation="Response addresses the query",
             source="llm-judge",
-            rationale="Answer directly addresses the question",
+        )
+
+        # Session-level scoring
+        score(
+            name="user_satisfaction",
+            value=0.88,
+            conversation_id="session-123",
+            label="satisfied",
+            source="human",
         )
     """
     tracer = trace.get_tracer(_TRACER_NAME)
 
     attrs: Dict[str, Any] = {
-        "opensearch.score": True,
-        "score.name": name,
-        "score.data_type": data_type,
-        "score.source": source,
-        "score.project": project or os.environ.get("OPENSEARCH_PROJECT", "default"),
+        "gen_ai.evaluation.name": name,
+        "gen_ai.evaluation.source": source,
     }
 
     if value is not None:
-        attrs["score.value"] = value
+        attrs["gen_ai.evaluation.score.value"] = value
     if trace_id:
-        attrs["score.trace_id"] = trace_id
+        attrs["gen_ai.evaluation.trace_id"] = trace_id
     if span_id:
-        attrs["score.span_id"] = span_id
+        attrs["gen_ai.evaluation.span_id"] = span_id
+    if conversation_id:
+        attrs["gen_ai.conversation.id"] = conversation_id
     if label:
-        attrs["score.label"] = label
-    if comment:
-        attrs["score.comment"] = comment
-    if rationale:
-        attrs["score.rationale"] = rationale[:500]
+        attrs["gen_ai.evaluation.score.label"] = label
+    if explanation:
+        attrs["gen_ai.evaluation.explanation"] = explanation[:500]
+    if response_id:
+        attrs["gen_ai.response.id"] = response_id
     if metadata:
         for k, v in metadata.items():
-            attrs[f"score.metadata.{k}"] = str(v)
+            attrs[f"gen_ai.evaluation.metadata.{k}"] = str(v)
 
-    with tracer.start_as_current_span(f"score.{name}", attributes=attrs):
+    with tracer.start_as_current_span("gen_ai.evaluation.result", attributes=attrs):
         logger.debug("Score emitted: %s=%s (trace=%s)", name, value, trace_id)

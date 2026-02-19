@@ -107,7 +107,12 @@ def register(
         register(endpoint="http://localhost:4317", protocol="grpc")
     """
     endpoint = endpoint or os.environ.get("OPENSEARCH_OTEL_ENDPOINT", DEFAULT_ENDPOINT)
-    name = service_name or project_name or os.environ.get("OPENSEARCH_PROJECT", "default")
+    name = (
+        service_name
+        or project_name
+        or os.environ.get("OTEL_SERVICE_NAME")
+        or os.environ.get("OPENSEARCH_PROJECT", "default")
+    )
 
     # Step 1: Create Resource (identity tag for all spans)
     resource = Resource.create({"service.name": name})

@@ -1,12 +1,11 @@
 """OpenSearch AI Observability SDK.
 
-OTEL-native tracing, scoring, and evaluation for LLM applications.
+OTEL-native tracing and scoring for LLM applications.
 """
 
 from opensearch_genai_sdk.register import register
 from opensearch_genai_sdk.decorators import workflow, task, agent, tool
 from opensearch_genai_sdk.score import score
-from opensearch_genai_sdk.evals import evaluate, Scorer, Score
 
 __all__ = [
     # Setup
@@ -18,8 +17,4 @@ __all__ = [
     "tool",
     # Scoring
     "score",
-    # Evals
-    "evaluate",
-    "Scorer",
-    "Score",
 ]

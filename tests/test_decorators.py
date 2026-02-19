@@ -36,6 +36,7 @@ def sync_agent(query: str) -> str:
 
 @tool(name="my_tool")
 def sync_tool(a: int, b: int) -> int:
+    """Add two numbers."""
     return a + b
 
 
@@ -77,6 +78,11 @@ def auto_name_workflow():
 @workflow(name="versioned_workflow", version=3)
 def versioned_workflow_fn():
     return "v3"
+
+
+@agent(name="versioned_agent", version=2)
+def versioned_agent_fn():
+    return "v2"
 
 
 @workflow(name="parent_workflow")
@@ -123,6 +129,17 @@ async def async_generator_error_tool_fn():
     raise ValueError("async gen error")
 
 
+@tool(name="documented_tool")
+def documented_tool_fn(x: int) -> int:
+    """A tool with a docstring for testing gen_ai.tool.description."""
+    return x * 2
+
+
+@tool(name="undocumented_tool")
+def undocumented_tool_fn(x: int) -> int:
+    return x * 3
+
+
 # ---------------------------------------------------------------------------
 # Sync decorator tests
 # ---------------------------------------------------------------------------
@@ -158,8 +175,9 @@ class TestSyncDecorators:
         spans = exporter.get_finished_spans()
         assert len(spans) == 1
         span = spans[0]
-        assert span.name == "my_agent"
-        assert span.attributes["gen_ai.operation.name"] == "agent"
+        assert span.name == "invoke_agent my_agent"
+        assert span.attributes["gen_ai.operation.name"] == "invoke_agent"
+        assert span.attributes["gen_ai.agent.name"] == "my_agent"
 
     def test_tool_creates_span(self, exporter):
         result = sync_tool(3, 4)
@@ -168,22 +186,50 @@ class TestSyncDecorators:
         spans = exporter.get_finished_spans()
         assert len(spans) == 1
         span = spans[0]
-        assert span.name == "my_tool"
-        assert span.attributes["gen_ai.operation.name"] == "tool"
+        assert span.name == "execute_tool my_tool"
+        assert span.attributes["gen_ai.operation.name"] == "execute_tool"
+        assert span.attributes["gen_ai.tool.name"] == "my_tool"
+
+    def test_tool_type_attribute(self, exporter):
+        sync_tool(1, 2)
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        assert span.attributes["gen_ai.tool.type"] == "function"
+
+    def test_tool_description_from_docstring(self, exporter):
+        documented_tool_fn(5)
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        assert span.attributes["gen_ai.tool.description"] == "A tool with a docstring for testing gen_ai.tool.description."
+
+    def test_tool_no_description_when_no_docstring(self, exporter):
+        undocumented_tool_fn(5)
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        assert "gen_ai.tool.description" not in span.attributes
+
+    def test_tool_input_uses_call_arguments(self, exporter):
+        sync_tool(3, 4)
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        captured = json.loads(span.attributes["gen_ai.tool.call.arguments"])
+        assert captured == {"a": 3, "b": 4}
+        assert "gen_ai.entity.input" not in span.attributes
+
+    def test_tool_output_uses_call_result(self, exporter):
+        result = sync_tool(3, 4)
+        assert result == 7
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        assert json.loads(span.attributes["gen_ai.tool.call.result"]) == 7
+        assert "gen_ai.entity.output" not in span.attributes
 
     def test_input_capture_single_arg(self, exporter):
         sync_workflow(42)
         spans = exporter.get_finished_spans()
         span = spans[0]
         # Single positional arg is captured directly
-        assert json.loads(span.attributes["gen_ai.entity.input"]) == 42
-
-    def test_input_capture_multiple_args(self, exporter):
-        sync_tool(3, 4)
-        spans = exporter.get_finished_spans()
-        span = spans[0]
-        captured = json.loads(span.attributes["gen_ai.entity.input"])
-        assert captured == [3, 4]
+        assert json.loads(span.attributes["gen_ai.entity.input"]) == {"x": 42}
 
     def test_input_capture_kwargs_only(self, exporter):
         kwargs_workflow_fn(key="x", value=99)
@@ -197,7 +243,7 @@ class TestSyncDecorators:
         spans = exporter.get_finished_spans()
         span = spans[0]
         captured = json.loads(span.attributes["gen_ai.entity.input"])
-        assert captured == {"args": [1, 2], "kwargs": {"flag": True}}
+        assert captured == {"a": 1, "b": 2, "flag": True}
 
     def test_output_capture(self, exporter):
         result = sync_workflow(5)
@@ -241,17 +287,25 @@ class TestSyncDecorators:
         span = spans[0]
         assert span.name == "auto_name_workflow"
 
-    def test_version_attribute(self, exporter):
+    def test_version_attribute_workflow(self, exporter):
         versioned_workflow_fn()
         spans = exporter.get_finished_spans()
         span = spans[0]
         assert span.attributes["gen_ai.entity.version"] == 3
+
+    def test_version_attribute_agent(self, exporter):
+        versioned_agent_fn()
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        assert span.attributes["gen_ai.agent.version"] == "2"
+        assert "gen_ai.entity.version" not in span.attributes
 
     def test_no_version_attribute_when_not_set(self, exporter):
         sync_workflow(1)
         spans = exporter.get_finished_spans()
         span = spans[0]
         assert "gen_ai.entity.version" not in span.attributes
+        assert "gen_ai.agent.version" not in span.attributes
 
 
 class TestParentChildRelationships:
@@ -316,8 +370,8 @@ class TestAsyncDecorators:
         spans = exporter.get_finished_spans()
         assert len(spans) == 1
         span = spans[0]
-        assert span.name == "async_agent"
-        assert span.attributes["gen_ai.operation.name"] == "agent"
+        assert span.name == "invoke_agent async_agent"
+        assert span.attributes["gen_ai.operation.name"] == "invoke_agent"
 
     @pytest.mark.asyncio
     async def test_async_tool(self, exporter):
@@ -327,8 +381,8 @@ class TestAsyncDecorators:
         spans = exporter.get_finished_spans()
         assert len(spans) == 1
         span = spans[0]
-        assert span.name == "async_tool"
-        assert span.attributes["gen_ai.operation.name"] == "tool"
+        assert span.name == "execute_tool async_tool"
+        assert span.attributes["gen_ai.operation.name"] == "execute_tool"
 
     @pytest.mark.asyncio
     async def test_async_output_capture(self, exporter):
@@ -344,8 +398,8 @@ class TestAsyncDecorators:
         await async_tool_fn(10, 20)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        captured = json.loads(span.attributes["gen_ai.entity.input"])
-        assert captured == [10, 20]
+        captured = json.loads(span.attributes["gen_ai.tool.call.arguments"])
+        assert captured == {"a": 10, "b": 20}
 
     @pytest.mark.asyncio
     async def test_async_error_sets_span_status(self, exporter):
@@ -385,8 +439,8 @@ class TestGeneratorDecorators:
         spans = exporter.get_finished_spans()
         assert len(spans) == 1
         span = spans[0]
-        assert span.name == "gen_tool"
-        assert span.attributes["gen_ai.operation.name"] == "tool"
+        assert span.name == "execute_tool gen_tool"
+        assert span.attributes["gen_ai.operation.name"] == "execute_tool"
 
     @pytest.mark.asyncio
     async def test_async_generator(self, exporter):
@@ -398,8 +452,8 @@ class TestGeneratorDecorators:
         spans = exporter.get_finished_spans()
         assert len(spans) == 1
         span = spans[0]
-        assert span.name == "async_gen_tool"
-        assert span.attributes["gen_ai.operation.name"] == "tool"
+        assert span.name == "execute_tool async_gen_tool"
+        assert span.attributes["gen_ai.operation.name"] == "execute_tool"
 
     def test_sync_generator_error(self, exporter):
         gen = generator_error_tool_fn()
@@ -525,3 +579,23 @@ class TestEdgeCases:
         returns_weird()
         spans = exporter.get_finished_spans()
         assert len(spans) == 1  # Decorator should not crash
+
+    def test_tool_none_return_no_output_attribute(self, exporter):
+        @tool(name="none_tool")
+        def tool_returns_none():
+            return None
+
+        tool_returns_none()
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        assert "gen_ai.tool.call.result" not in span.attributes
+
+    def test_tool_no_args_no_input_attribute(self, exporter):
+        @tool(name="no_args_tool")
+        def tool_no_args():
+            return 42
+
+        tool_no_args()
+        spans = exporter.get_finished_spans()
+        span = spans[0]
+        assert "gen_ai.tool.call.arguments" not in span.attributes

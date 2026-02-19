@@ -1,7 +1,7 @@
 [project]
 name = "opensearch-genai-sdk"
 version = "0.2.0"
-description = "OpenSearch AI Observability SDK — OTEL-native tracing, scoring, and evaluation for LLM applications"
+description = "OpenSearch AI Observability SDK — OTEL-native tracing and scoring for LLM applications"
 authors = [
     { name = "OpenSearch Contributors" },
 ]
@@ -13,6 +13,41 @@ dependencies = [
     "opentelemetry-sdk>=1.20.0,<2",
     "opentelemetry-exporter-otlp-proto-http>=1.20.0,<2",
     "opentelemetry-exporter-otlp-proto-grpc>=1.20.0,<2",
+    # LLM provider instrumentors
+    "opentelemetry-instrumentation-openai>=0.52.0",
+    "opentelemetry-instrumentation-openai-agents>=0.52.0",
+    "opentelemetry-instrumentation-anthropic>=0.52.0",
+    "opentelemetry-instrumentation-cohere>=0.52.0",
+    "opentelemetry-instrumentation-mistralai>=0.52.0",
+    "opentelemetry-instrumentation-groq>=0.52.0",
+    "opentelemetry-instrumentation-ollama>=0.52.0",
+    "opentelemetry-instrumentation-together>=0.52.0",
+    "opentelemetry-instrumentation-replicate>=0.52.0",
+    "opentelemetry-instrumentation-writer>=0.52.0",
+    "opentelemetry-instrumentation-google-generativeai>=0.52.0",
+    "opentelemetry-instrumentation-voyageai>=0.52.0",
+    "opentelemetry-instrumentation-alephalpha>=0.52.0",
+    # AWS AI instrumentors
+    "opentelemetry-instrumentation-bedrock>=0.52.0",
+    "opentelemetry-instrumentation-sagemaker>=0.52.0",
+    "opentelemetry-instrumentation-vertexai>=0.52.0",
+    "opentelemetry-instrumentation-watsonx>=0.52.0",
+    # Framework instrumentors
+    "opentelemetry-instrumentation-langchain>=0.52.0",
+    "opentelemetry-instrumentation-llamaindex>=0.52.0",
+    "opentelemetry-instrumentation-haystack>=0.52.0",
+    "opentelemetry-instrumentation-crewai>=0.52.0",
+    "opentelemetry-instrumentation-agno>=0.52.0",
+    "opentelemetry-instrumentation-mcp>=0.52.0",
+    "opentelemetry-instrumentation-transformers>=0.52.0",
+    # Vector DB instrumentors
+    "opentelemetry-instrumentation-chromadb>=0.52.0",
+    "opentelemetry-instrumentation-pinecone>=0.52.0",
+    "opentelemetry-instrumentation-qdrant>=0.52.0",
+    "opentelemetry-instrumentation-weaviate>=0.52.0",
+    "opentelemetry-instrumentation-milvus>=0.52.0",
+    "opentelemetry-instrumentation-lancedb>=0.52.0",
+    "opentelemetry-instrumentation-marqo>=0.52.0",
 ]
 
 [project.optional-dependencies]
@@ -20,15 +55,15 @@ aws = [
     "botocore>=1.29.0",
     "requests-aws4auth>=1.2.0",
 ]
-evals = [
-    "autoevals>=0.0.50",
+minimal = [
+    # Core OTEL only — no auto-instrumentation
 ]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
 ]
 all = [
-    "opensearch-genai-sdk[aws,evals]",
+    "opensearch-genai-sdk[aws]",
 ]
 
 [project.urls]

@@ -35,9 +35,9 @@ DIM = "\033[2m"
 
 SPAN_KIND_MAP = {
     "workflow": f"{MAGENTA}workflow{RESET}",
-    "agent": f"{CYAN}agent{RESET}",
+    "invoke_agent": f"{CYAN}agent{RESET}",
     "task": f"{GREEN}task{RESET}",
-    "tool": f"{YELLOW}tool{RESET}",
+    "execute_tool": f"{YELLOW}tool{RESET}",
 }
 
 
@@ -71,7 +71,7 @@ def print_span(span, resource_attrs: dict):
             attrs[key] = str(val)
 
     span_kind = attrs.get("gen_ai.operation.name", "")
-    is_score = attrs.get("opensearch.score", False)
+    is_score = "gen_ai.evaluation.name" in attrs
     kind_label = SPAN_KIND_MAP.get(span_kind, f"{RED}score{RESET}" if is_score else "internal")
 
     trace_id = format_trace_id(span.trace_id)
@@ -89,8 +89,11 @@ def print_span(span, resource_attrs: dict):
 
     # Print interesting attributes
     for key in ["gen_ai.entity.input", "gen_ai.entity.output",
-                "score.name", "score.value", "score.source", "score.rationale",
-                "score.trace_id"]:
+                "gen_ai.tool.call.arguments", "gen_ai.tool.call.result",
+                "gen_ai.evaluation.name", "gen_ai.evaluation.score.value",
+                "gen_ai.evaluation.source", "gen_ai.evaluation.explanation",
+                "gen_ai.evaluation.trace_id", "gen_ai.evaluation.span_id",
+                "gen_ai.conversation.id"]:
         if key in attrs:
             val = attrs[key]
             # Truncate long values

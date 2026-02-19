@@ -1,9 +1,8 @@
 """Scoring with opensearch-genai-sdk.
 
-Shows how to submit scores as OTEL spans. Scores flow through the
-same exporter pipeline as traces — same SigV4 auth, same Data Prepper
-endpoint. Data Prepper routes them to the ai-scores index based on
-the `opensearch.score` attribute.
+Shows how to submit evaluation scores as OTEL spans. Scores flow through
+the same exporter pipeline as traces — same SigV4 auth, same Data Prepper
+endpoint. Supports three scoring levels: span, trace, and session.
 """
 
 from opensearch_genai_sdk import register, score
@@ -12,35 +11,35 @@ from opensearch_genai_sdk import register, score
 register(endpoint="http://localhost:21890/opentelemetry/v1/traces")
 
 
-# --- Numeric score (e.g., from an LLM judge) ---
+# --- Span-level score (score a specific LLM call or tool execution) ---
 score(
     name="relevance",
     value=0.95,
     trace_id="abc123def456",
     span_id="789abc",
     source="llm-judge",
-    rationale="Answer directly addresses the question with correct facts",
+    explanation="Answer directly addresses the question with correct facts",
 )
 
 
-# --- Categorical score (e.g., human review) ---
+# --- Trace-level score (score an entire workflow) ---
 score(
     name="quality",
-    label="good",
-    data_type="CATEGORICAL",
+    value=0.88,
     trace_id="abc123def456",
+    label="good",
     source="human",
-    comment="Reviewed by QA team",
+    explanation="Reviewed by QA team, response is accurate and well-formatted",
 )
 
 
-# --- Boolean score (e.g., heuristic check) ---
+# --- Session-level score (score across multiple traces in a conversation) ---
 score(
-    name="contains_pii",
-    value=0.0,
-    data_type="BOOLEAN",
-    trace_id="abc123def456",
-    source="heuristic",
+    name="user_satisfaction",
+    value=0.92,
+    conversation_id="session-456",
+    label="satisfied",
+    source="human",
 )
 
 
@@ -56,11 +55,11 @@ score(
 
 # Each score() call creates an OTEL span like:
 #
-#   Span: score.relevance
+#   Span: gen_ai.evaluation.result
 #   Attributes:
-#     opensearch.score = true        ← Data Prepper routes on this
-#     score.name = "relevance"
-#     score.value = 0.95
-#     score.trace_id = "abc123def456"
-#     score.source = "llm-judge"
-#     score.rationale = "Answer directly addresses..."
+#     gen_ai.evaluation.name = "relevance"
+#     gen_ai.evaluation.score.value = 0.95
+#     gen_ai.evaluation.trace_id = "abc123def456"
+#     gen_ai.evaluation.span_id = "789abc"
+#     gen_ai.evaluation.source = "llm-judge"
+#     gen_ai.evaluation.explanation = "Answer directly addresses..."
