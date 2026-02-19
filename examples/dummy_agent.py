@@ -7,14 +7,14 @@ Run:
 
 This produces a complete span tree printed to stdout as JSON:
 
-    research_workflow                    (workflow)
-    +-- research_agent                   (agent)
-    |   +-- plan_research                (task)
-    |   +-- web_search                   (tool)       x N queries
-    |   +-- calculator                   (tool)       optional
-    |   +-- summarize_results            (task)
-    +-- score.relevance                  (score span)
-    +-- score.completeness               (score span)
+    research_workflow                           (workflow)
+    +-- invoke_agent research_agent             (agent)
+    |   +-- plan_research                       (task)
+    |   +-- execute_tool web_search             (tool)       x N queries
+    |   +-- execute_tool calculator             (tool)       optional
+    |   +-- summarize_results                   (task)
+    +-- gen_ai.evaluation.result                (score: relevance)
+    +-- gen_ai.evaluation.result                (score: completeness)
 
 No collector, no Data Prepper, no network needed.
 """
@@ -204,7 +204,7 @@ def research_workflow(question: str) -> str:
         trace_id=trace_id,
         span_id=span_id,
         source="llm-judge",
-        rationale="The answer directly addresses the question with specific details "
+        explanation="The answer directly addresses the question with specific details "
         "about OpenSearch features, observability, and AI capabilities.",
     )
 
@@ -214,7 +214,7 @@ def research_workflow(question: str) -> str:
         trace_id=trace_id,
         span_id=span_id,
         source="llm-judge",
-        rationale="Covers most aspects but could include more detail on "
+        explanation="Covers most aspects but could include more detail on "
         "vector search and neural search capabilities.",
     )
 
@@ -238,13 +238,13 @@ if __name__ == "__main__":
     print(f"{'='*70}")
     print()
     print("Span tree produced:")
-    print("  research_workflow              (workflow)")
-    print("  +-- research_agent             (agent)")
-    print("  |   +-- plan_research          (task)")
-    print("  |   +-- web_search             (tool) x3 queries")
-    print("  |   +-- summarize_results      (task)")
-    print("  +-- score.relevance            (score)")
-    print("  +-- score.completeness         (score)")
+    print("  research_workflow                        (workflow)")
+    print("  +-- invoke_agent research_agent          (agent)")
+    print("  |   +-- plan_research                    (task)")
+    print("  |   +-- execute_tool web_search          (tool) x3 queries")
+    print("  |   +-- summarize_results                (task)")
+    print("  +-- gen_ai.evaluation.result             (score: relevance)")
+    print("  +-- gen_ai.evaluation.result             (score: completeness)")
     print()
     print("All spans were printed to stdout by ConsoleSpanExporter.")
     print("No collector or backend needed.")

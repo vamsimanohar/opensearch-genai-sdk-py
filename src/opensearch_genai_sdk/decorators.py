@@ -28,8 +28,8 @@ F = TypeVar("F", bound=Callable[..., Any])
 # Span kind values following OTEL GenAI semantic conventions
 SPAN_KIND_WORKFLOW = "workflow"
 SPAN_KIND_TASK = "task"
-SPAN_KIND_AGENT = "agent"
-SPAN_KIND_TOOL = "tool"
+SPAN_KIND_AGENT = "invoke_agent"
+SPAN_KIND_TOOL = "execute_tool"
 
 _TRACER_NAME = "opensearch-genai-sdk"
 
@@ -129,18 +129,25 @@ def _make_decorator(
     """Create a decorator that wraps a function in an OTEL span."""
 
     def decorator(fn: F) -> F:
-        span_name = name or fn.__qualname__
+        entity_name = name or fn.__qualname__
+        # Agent/tool span names follow semconv: "{operation} {name}"
+        if span_kind in (SPAN_KIND_AGENT, SPAN_KIND_TOOL):
+            span_name = f"{span_kind} {entity_name}"
+        else:
+            span_name = entity_name
+        fn_doc = fn.__doc__
         tracer = trace.get_tracer(_TRACER_NAME)
+        sig = inspect.signature(fn)
 
         if inspect.iscoroutinefunction(fn):
 
             @functools.wraps(fn)
             async def async_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, version, args, kwargs)
+                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
                     try:
                         result = await fn(*args, **kwargs)
-                        _set_output(span, result)
+                        _set_output(span, span_kind, result)
                         return result
                     except Exception as exc:
                         span.set_status(trace.StatusCode.ERROR, str(exc))
@@ -154,7 +161,7 @@ def _make_decorator(
             @functools.wraps(fn)
             def gen_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, version, args, kwargs)
+                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
                     try:
                         yield from fn(*args, **kwargs)
                     except Exception as exc:
@@ -169,7 +176,7 @@ def _make_decorator(
             @functools.wraps(fn)
             async def async_gen_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, version, args, kwargs)
+                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
                     try:
                         async for item in fn(*args, **kwargs):
                             yield item
@@ -185,10 +192,10 @@ def _make_decorator(
             @functools.wraps(fn)
             def sync_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, version, args, kwargs)
+                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
                     try:
                         result = fn(*args, **kwargs)
-                        _set_output(span, result)
+                        _set_output(span, span_kind, result)
                         return result
                     except Exception as exc:
                         span.set_status(trace.StatusCode.ERROR, str(exc))
@@ -203,41 +210,73 @@ def _make_decorator(
 def _set_span_attributes(
     span: trace.Span,
     span_kind: str,
+    entity_name: str,
     version: Optional[int],
+    sig: inspect.Signature,
     args: tuple,
     kwargs: dict,
+    fn_doc: Optional[str] = None,
 ) -> None:
     """Set standard attributes on a span."""
     span.set_attribute("gen_ai.operation.name", span_kind)
 
+    # Use type-specific name attributes matching gen_ai semantic conventions
+    _NAME_ATTR = {
+        SPAN_KIND_WORKFLOW: "gen_ai.workflow.name",
+        SPAN_KIND_TASK: "gen_ai.task.name",
+        SPAN_KIND_AGENT: "gen_ai.agent.name",
+        SPAN_KIND_TOOL: "gen_ai.tool.name",
+    }
+    span.set_attribute(_NAME_ATTR.get(span_kind, "gen_ai.entity.name"), entity_name)
+
     if version is not None:
-        span.set_attribute("gen_ai.entity.version", version)
+        if span_kind == SPAN_KIND_AGENT:
+            span.set_attribute("gen_ai.agent.version", str(version))
+        else:
+            span.set_attribute("gen_ai.entity.version", version)
+
+    # Tool-specific attributes from semconv
+    if span_kind == SPAN_KIND_TOOL:
+        span.set_attribute("gen_ai.tool.type", "function")
+        if fn_doc:
+            span.set_attribute("gen_ai.tool.description", fn_doc)
 
     # Capture input (best-effort, don't fail if serialization fails)
-    _set_input(span, args, kwargs)
+    _set_input(span, span_kind, sig, args, kwargs)
 
 
-def _set_input(span: trace.Span, args: tuple, kwargs: dict) -> None:
-    """Attempt to capture function input as a span attribute."""
+def _set_input(span: trace.Span, span_kind: str, sig: inspect.Signature, args: tuple, kwargs: dict) -> None:
+    """Attempt to capture function input as a span attribute.
+
+    Binds positional and keyword arguments to their parameter names
+    so the trace shows {"city": "Paris"} instead of just "Paris".
+    """
     try:
-        if args and not kwargs:
-            value = args[0] if len(args) == 1 else list(args)
-        elif kwargs and not args:
-            value = kwargs
-        else:
-            value = {"args": list(args), "kwargs": kwargs} if args or kwargs else None
+        if not args and not kwargs:
+            return
 
-        if value is not None:
-            serialized = json.dumps(value, default=str)
-            # Truncate to avoid oversized attributes
-            if len(serialized) > 10_000:
-                serialized = serialized[:10_000] + "...(truncated)"
-            span.set_attribute("gen_ai.entity.input", serialized)
+        # Bind args to parameter names for readable output
+        try:
+            bound = sig.bind(*args, **kwargs)
+            bound.apply_defaults()
+            value = dict(bound.arguments)
+        except TypeError:
+            # Fallback if binding fails (e.g., *args/**kwargs signatures)
+            value = {"args": list(args), "kwargs": kwargs}
+
+        serialized = json.dumps(value, default=str)
+        # Truncate to avoid oversized attributes
+        if len(serialized) > 10_000:
+            serialized = serialized[:10_000] + "...(truncated)"
+
+        # Tool spans use semconv attribute name
+        attr_key = "gen_ai.tool.call.arguments" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.input"
+        span.set_attribute(attr_key, serialized)
     except Exception:
         pass
 
 
-def _set_output(span: trace.Span, result: Any) -> None:
+def _set_output(span: trace.Span, span_kind: str, result: Any) -> None:
     """Attempt to capture function output as a span attribute."""
     try:
         if result is None:
@@ -245,6 +284,9 @@ def _set_output(span: trace.Span, result: Any) -> None:
         serialized = json.dumps(result, default=str)
         if len(serialized) > 10_000:
             serialized = serialized[:10_000] + "...(truncated)"
-        span.set_attribute("gen_ai.entity.output", serialized)
+
+        # Tool spans use semconv attribute name
+        attr_key = "gen_ai.tool.call.result" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.output"
+        span.set_attribute(attr_key, serialized)
     except Exception:
         pass
