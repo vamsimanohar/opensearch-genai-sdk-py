@@ -12,12 +12,12 @@ your code still works.
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import inspect
 import json
 import logging
-from typing import Any, Callable, Optional, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from opentelemetry import trace
 
@@ -35,8 +35,8 @@ _TRACER_NAME = "opensearch-genai-sdk"
 
 
 def workflow(
-    name: Optional[str] = None,
-    version: Optional[int] = None,
+    name: str | None = None,
+    version: int | None = None,
 ) -> Callable[[F], F]:
     """Trace a function as a workflow span.
 
@@ -58,8 +58,8 @@ def workflow(
 
 
 def task(
-    name: Optional[str] = None,
-    version: Optional[int] = None,
+    name: str | None = None,
+    version: int | None = None,
 ) -> Callable[[F], F]:
     """Trace a function as a task span.
 
@@ -78,8 +78,8 @@ def task(
 
 
 def agent(
-    name: Optional[str] = None,
-    version: Optional[int] = None,
+    name: str | None = None,
+    version: int | None = None,
 ) -> Callable[[F], F]:
     """Trace a function as an agent span.
 
@@ -102,8 +102,8 @@ def agent(
 
 
 def tool(
-    name: Optional[str] = None,
-    version: Optional[int] = None,
+    name: str | None = None,
+    version: int | None = None,
 ) -> Callable[[F], F]:
     """Trace a function as a tool span.
 
@@ -122,8 +122,8 @@ def tool(
 
 
 def _make_decorator(
-    name: Optional[str],
-    version: Optional[int],
+    name: str | None,
+    version: int | None,
     span_kind: str,
 ) -> Callable[[F], F]:
     """Create a decorator that wraps a function in an OTEL span."""
@@ -144,7 +144,9 @@ def _make_decorator(
             @functools.wraps(fn)
             async def async_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
+                    _set_span_attributes(
+                        span, span_kind, entity_name, version, sig, args, kwargs, fn_doc
+                    )
                     try:
                         result = await fn(*args, **kwargs)
                         _set_output(span, span_kind, result)
@@ -161,7 +163,9 @@ def _make_decorator(
             @functools.wraps(fn)
             def gen_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
+                    _set_span_attributes(
+                        span, span_kind, entity_name, version, sig, args, kwargs, fn_doc
+                    )
                     try:
                         yield from fn(*args, **kwargs)
                     except Exception as exc:
@@ -176,7 +180,9 @@ def _make_decorator(
             @functools.wraps(fn)
             async def async_gen_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
+                    _set_span_attributes(
+                        span, span_kind, entity_name, version, sig, args, kwargs, fn_doc
+                    )
                     try:
                         async for item in fn(*args, **kwargs):
                             yield item
@@ -192,7 +198,9 @@ def _make_decorator(
             @functools.wraps(fn)
             def sync_wrapper(*args, **kwargs):
                 with tracer.start_as_current_span(span_name) as span:
-                    _set_span_attributes(span, span_kind, entity_name, version, sig, args, kwargs, fn_doc)
+                    _set_span_attributes(
+                        span, span_kind, entity_name, version, sig, args, kwargs, fn_doc
+                    )
                     try:
                         result = fn(*args, **kwargs)
                         _set_output(span, span_kind, result)
@@ -211,11 +219,11 @@ def _set_span_attributes(
     span: trace.Span,
     span_kind: str,
     entity_name: str,
-    version: Optional[int],
+    version: int | None,
     sig: inspect.Signature,
     args: tuple,
     kwargs: dict,
-    fn_doc: Optional[str] = None,
+    fn_doc: str | None = None,
 ) -> None:
     """Set standard attributes on a span."""
     span.set_attribute("gen_ai.operation.name", span_kind)
@@ -245,7 +253,9 @@ def _set_span_attributes(
     _set_input(span, span_kind, sig, args, kwargs)
 
 
-def _set_input(span: trace.Span, span_kind: str, sig: inspect.Signature, args: tuple, kwargs: dict) -> None:
+def _set_input(
+    span: trace.Span, span_kind: str, sig: inspect.Signature, args: tuple, kwargs: dict
+) -> None:
     """Attempt to capture function input as a span attribute.
 
     Binds positional and keyword arguments to their parameter names
@@ -270,7 +280,9 @@ def _set_input(span: trace.Span, span_kind: str, sig: inspect.Signature, args: t
             serialized = serialized[:10_000] + "...(truncated)"
 
         # Tool spans use semconv attribute name
-        attr_key = "gen_ai.tool.call.arguments" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.input"
+        attr_key = (
+            "gen_ai.tool.call.arguments" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.input"
+        )
         span.set_attribute(attr_key, serialized)
     except Exception:
         pass
@@ -286,7 +298,9 @@ def _set_output(span: trace.Span, span_kind: str, result: Any) -> None:
             serialized = serialized[:10_000] + "...(truncated)"
 
         # Tool spans use semconv attribute name
-        attr_key = "gen_ai.tool.call.result" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.output"
+        attr_key = (
+            "gen_ai.tool.call.result" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.output"
+        )
         span.set_attribute(attr_key, serialized)
     except Exception:
         pass

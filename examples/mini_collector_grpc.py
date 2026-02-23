@@ -11,9 +11,9 @@ Usage:
     python examples/agent_grpc.py
 """
 
-import grpc
 from concurrent import futures
 
+import grpc
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
     ExportTraceServiceRequest,
     ExportTraceServiceResponse,
@@ -75,12 +75,19 @@ def print_span(span, resource_attrs: dict):
     print(f"  {DIM}Parent: {parent_id}{RESET}")
     print(f"  {DIM}Service: {service}{RESET}")
 
-    for key in ["gen_ai.entity.input", "gen_ai.entity.output",
-                "gen_ai.tool.call.arguments", "gen_ai.tool.call.result",
-                "gen_ai.evaluation.name", "gen_ai.evaluation.score.value",
-                "gen_ai.evaluation.source", "gen_ai.evaluation.explanation",
-                "gen_ai.evaluation.trace_id", "gen_ai.evaluation.span_id",
-                "gen_ai.conversation.id"]:
+    for key in [
+        "gen_ai.entity.input",
+        "gen_ai.entity.output",
+        "gen_ai.tool.call.arguments",
+        "gen_ai.tool.call.result",
+        "gen_ai.evaluation.name",
+        "gen_ai.evaluation.score.value",
+        "gen_ai.evaluation.source",
+        "gen_ai.evaluation.explanation",
+        "gen_ai.evaluation.trace_id",
+        "gen_ai.evaluation.span_id",
+        "gen_ai.conversation.id",
+    ]:
         if key in attrs:
             val_str = str(attrs[key])
             if len(val_str) > 120:
@@ -117,10 +124,10 @@ def serve():
     print(f"{BOLD}{'=' * 70}{RESET}")
     print(f"{BOLD}  Mini OTEL Collector — gRPC on port 4317{RESET}")
     print(f"{BOLD}{'=' * 70}{RESET}")
-    print(f"  Listening: grpc://0.0.0.0:4317")
-    print(f"  Protocol:  OTLP/gRPC")
+    print("  Listening: grpc://0.0.0.0:4317")
+    print("  Protocol:  OTLP/gRPC")
     print()
-    print(f"  Test with: python examples/agent_grpc.py")
+    print("  Test with: python examples/agent_grpc.py")
     print(f"{BOLD}{'=' * 70}{RESET}\n")
 
     server.wait_for_termination()

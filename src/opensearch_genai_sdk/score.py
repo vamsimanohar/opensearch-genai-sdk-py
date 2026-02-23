@@ -14,7 +14,7 @@ for scoring. Same SigV4 auth, same exporter, same pipeline.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from opentelemetry import trace
 
@@ -25,16 +25,16 @@ _TRACER_NAME = "opensearch-genai-sdk-scores"
 
 def score(
     name: str,
-    value: Optional[float] = None,
+    value: float | None = None,
     *,
-    trace_id: Optional[str] = None,
-    span_id: Optional[str] = None,
-    conversation_id: Optional[str] = None,
-    label: Optional[str] = None,
-    explanation: Optional[str] = None,
-    response_id: Optional[str] = None,
+    trace_id: str | None = None,
+    span_id: str | None = None,
+    conversation_id: str | None = None,
+    label: str | None = None,
+    explanation: str | None = None,
+    response_id: str | None = None,
     source: str = "sdk",
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> None:
     """Submit an evaluation score as an OTEL span.
 
@@ -92,7 +92,7 @@ def score(
     """
     tracer = trace.get_tracer(_TRACER_NAME)
 
-    attrs: Dict[str, Any] = {
+    attrs: dict[str, Any] = {
         "gen_ai.evaluation.name": name,
         "gen_ai.evaluation.source": source,
     }

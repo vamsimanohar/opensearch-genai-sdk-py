@@ -33,16 +33,14 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 
-provider = TracerProvider(
-    resource=Resource.create({"service.name": "dummy-agent"})
-)
+provider = TracerProvider(resource=Resource.create({"service.name": "dummy-agent"}))
 provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
 trace.set_tracer_provider(provider)
 
 # ---------------------------------------------------------------------------
 # 2. Import SDK decorators and score (they pick up the global provider).
 # ---------------------------------------------------------------------------
-from opensearch_genai_sdk import workflow, task, agent, tool, score
+from opensearch_genai_sdk import agent, score, task, tool, workflow
 
 # ---------------------------------------------------------------------------
 # Simulated knowledge base for the "web search"
@@ -169,9 +167,7 @@ def research_agent(question: str) -> str:
     # Step 3: Optional tool call (e.g., compute something)
     if "how many" in question.lower() or "calculate" in question.lower():
         calc_result = calculator("len(results) * relevance_factor")
-        all_results.append(
-            {"title": "Calculation", "snippet": f"Computed value: {calc_result}"}
-        )
+        all_results.append({"title": "Calculation", "snippet": f"Computed value: {calc_result}"})
 
     # Step 4: Summarize
     answer = summarize_results(question, all_results)
@@ -228,14 +224,14 @@ if __name__ == "__main__":
     question = "What is OpenSearch and how does it support AI observability?"
 
     print(f"Question: {question}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print("Running research workflow... (spans print below as JSON)\n")
 
     result = research_workflow(question)
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"Answer: {result}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print()
     print("Span tree produced:")
     print("  research_workflow                        (workflow)")

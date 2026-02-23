@@ -6,18 +6,17 @@ names, semantic attributes, parent-child relationships, error handling,
 and input/output capture.
 """
 
-import asyncio
 import json
 
 import pytest
 from opentelemetry.trace import StatusCode
 
-from opensearch_genai_sdk.decorators import workflow, task, agent, tool
-
+from opensearch_genai_sdk.decorators import agent, task, tool, workflow
 
 # ---------------------------------------------------------------------------
 # Helper functions decorated by the SDK
 # ---------------------------------------------------------------------------
+
 
 @workflow(name="my_workflow")
 def sync_workflow(x: int) -> int:
@@ -200,7 +199,10 @@ class TestSyncDecorators:
         documented_tool_fn(5)
         spans = exporter.get_finished_spans()
         span = spans[0]
-        assert span.attributes["gen_ai.tool.description"] == "A tool with a docstring for testing gen_ai.tool.description."
+        assert (
+            span.attributes["gen_ai.tool.description"]
+            == "A tool with a docstring for testing gen_ai.tool.description."
+        )
 
     def test_tool_no_description_when_no_docstring(self, exporter):
         undocumented_tool_fn(5)
@@ -323,10 +325,7 @@ class TestParentChildRelationships:
         parent_span = next(s for s in spans if s.name == "parent_workflow")
 
         # Both belong to the same trace
-        assert (
-            child_span.context.trace_id
-            == parent_span.context.trace_id
-        )
+        assert child_span.context.trace_id == parent_span.context.trace_id
 
         # Child's parent is the workflow span
         assert child_span.parent.span_id == parent_span.context.span_id
@@ -574,6 +573,7 @@ class TestEdgeCases:
         def returns_weird():
             class Weird:
                 pass
+
             return Weird()
 
         returns_weird()

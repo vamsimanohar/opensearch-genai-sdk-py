@@ -5,7 +5,6 @@ gen_ai.evaluation.* semantic convention attributes for span-level,
 trace-level, and session-level scoring.
 """
 
-import pytest
 
 from opensearch_genai_sdk.score import score
 
@@ -179,7 +178,10 @@ class TestExplanation:
 
         spans = exporter.get_finished_spans()
         span = spans[0]
-        assert span.attributes["gen_ai.evaluation.explanation"] == "The answer correctly addresses the question."
+        assert (
+            span.attributes["gen_ai.evaluation.explanation"]
+            == "The answer correctly addresses the question."
+        )
 
     def test_explanation_truncated_at_500(self, exporter):
         long_explanation = "x" * 1000

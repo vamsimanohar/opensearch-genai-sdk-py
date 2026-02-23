@@ -17,7 +17,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
-
 # Module-level singletons, initialised once per process.
 _exporter = InMemorySpanExporter()
 _provider = TracerProvider(
