@@ -17,7 +17,7 @@ import logging
 import os
 import sys
 from importlib.metadata import entry_points
-from typing import Literal, Optional
+from typing import Literal
 from urllib.parse import urlparse
 
 from opentelemetry import trace
@@ -42,18 +42,18 @@ _INSTRUMENTOR_GROUPS = [
 
 def register(
     *,
-    endpoint: Optional[str] = None,
-    protocol: Optional[Literal["http", "grpc"]] = None,
-    project_name: Optional[str] = None,
-    service_name: Optional[str] = None,
+    endpoint: str | None = None,
+    protocol: Literal["http", "grpc"] | None = None,
+    project_name: str | None = None,
+    service_name: str | None = None,
     auth: str = "auto",
-    region: Optional[str] = None,
+    region: str | None = None,
     service: str = "osis",
     batch: bool = True,
     auto_instrument: bool = True,
-    exporter: Optional[SpanExporter] = None,
+    exporter: SpanExporter | None = None,
     set_global: bool = True,
-    headers: Optional[dict] = None,
+    headers: dict | None = None,
 ) -> TracerProvider:
     """Configure the OTEL tracing pipeline for OpenSearch.
 
@@ -76,8 +76,8 @@ def register(
             Defaults to OPENSEARCH_PROJECT env var or "default".
         service_name: Alias for project_name.
         auth: Authentication method.
-            - "auto": Detect AWS endpoints and use SigV4, plain otherwise.
-            - "sigv4": Force SigV4 signing.
+            - "auto": Use plain authentication (no special signing).
+            - "sigv4": Use AWS SigV4 signing for AWS endpoints.
             - "none": No authentication.
         region: AWS region for SigV4. Auto-detected if not provided.
         service: AWS service name for SigV4 signing (default: "osis").
@@ -94,8 +94,11 @@ def register(
         # Self-hosted — simplest setup (HTTP)
         register()
 
-        # AWS — SigV4 auto-detected (HTTP)
-        register(endpoint="https://pipeline.us-east-1.osis.amazonaws.com/v1/traces")
+        # AWS — SigV4 signing required for AWS endpoints
+        register(
+            endpoint="https://pipeline.us-east-1.osis.amazonaws.com/v1/traces",
+            auth="sigv4"
+        )
 
         # gRPC via URL scheme
         register(endpoint="grpc://localhost:4317")
@@ -156,7 +159,7 @@ def register(
     return provider
 
 
-def _infer_protocol(endpoint: str, protocol: Optional[str]) -> str:
+def _infer_protocol(endpoint: str, protocol: str | None) -> str:
     """Determine the OTLP transport protocol from explicit setting or URL scheme."""
     if protocol:
         return protocol
@@ -173,15 +176,15 @@ def _infer_protocol(endpoint: str, protocol: Optional[str]) -> str:
 
 def _create_exporter(
     endpoint: str,
-    protocol: Optional[str],
+    protocol: str | None,
     auth: str,
-    region: Optional[str],
+    region: str | None,
     service: str,
-    headers: Optional[dict],
+    headers: dict | None,
 ) -> SpanExporter:
     """Create the appropriate OTLP exporter based on protocol and auth."""
     resolved_protocol = _infer_protocol(endpoint, protocol)
-    use_sigv4 = auth == "sigv4" or (auth == "auto" and _is_aws_endpoint(endpoint))
+    use_sigv4 = auth == "sigv4"
 
     if resolved_protocol == "grpc":
         return _create_grpc_exporter(endpoint, use_sigv4, region, service, headers)
@@ -192,9 +195,9 @@ def _create_exporter(
 def _create_http_exporter(
     endpoint: str,
     use_sigv4: bool,
-    region: Optional[str],
+    region: str | None,
     service: str,
-    headers: Optional[dict],
+    headers: dict | None,
 ) -> SpanExporter:
     """Create an HTTP OTLP exporter, with optional SigV4."""
     if use_sigv4:
@@ -216,9 +219,9 @@ def _create_http_exporter(
 def _create_grpc_exporter(
     endpoint: str,
     use_sigv4: bool,
-    region: Optional[str],
+    region: str | None,
     service: str,
-    headers: Optional[dict],
+    headers: dict | None,
 ) -> SpanExporter:
     """Create a gRPC OTLP exporter."""
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
@@ -244,20 +247,6 @@ def _create_grpc_exporter(
         insecure=insecure,
         headers=headers,
     )
-
-
-def _is_aws_endpoint(endpoint: str) -> bool:
-    """Detect if an endpoint is an AWS-hosted service."""
-    parsed = urlparse(endpoint)
-    hostname = parsed.hostname or ""
-    aws_patterns = [
-        ".amazonaws.com",
-        ".aws.dev",
-        ".osis.",
-        ".es.",
-        ".aoss.",
-    ]
-    return any(pattern in hostname for pattern in aws_patterns)
 
 
 def _auto_instrument(provider: TracerProvider) -> None:

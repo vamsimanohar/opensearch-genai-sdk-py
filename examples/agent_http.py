@@ -8,10 +8,12 @@ Usage:
     # Terminal 2: python examples/agent_http.py
 """
 
-import time
 import random
-from opensearch_genai_sdk import register, workflow, task, agent, tool, score
+import time
+
 from opentelemetry import trace
+
+from opensearch_genai_sdk import agent, register, score, task, tool, workflow
 
 # --- register() with HTTP endpoint ---
 register(
@@ -19,6 +21,7 @@ register(
     service_name="agent-http-demo",
     batch=False,  # SimpleSpanProcessor — flush immediately for demo
 )
+
 
 # --- Tools ---
 @tool(name="web_search")
@@ -29,10 +32,12 @@ def web_search(query: str) -> list[dict]:
         {"title": f"Result 2 for: {query}", "snippet": "Supports vector search and observability."},
     ]
 
+
 @tool(name="calculator")
 def calculator(expr: str) -> float:
     time.sleep(0.02)
     return 42.0
+
 
 # --- Tasks ---
 @task(name="plan")
@@ -40,11 +45,13 @@ def plan(question: str) -> list[str]:
     time.sleep(0.03)
     return [question, f"{question} features"]
 
+
 @task(name="summarize")
 def summarize(results: list[dict]) -> str:
     time.sleep(0.05)
     snippets = [r["snippet"] for r in results]
     return f"Summary: {'. '.join(snippets)}"
+
 
 # --- Agent ---
 @agent(name="research_agent")
@@ -54,6 +61,7 @@ def research(question: str) -> str:
     for q in queries:
         all_results.extend(web_search(q))
     return summarize(all_results)
+
 
 # --- Workflow ---
 @workflow(name="qa_workflow")
@@ -68,6 +76,7 @@ def run(question: str) -> str:
     score(name="completeness", value=0.88, trace_id=tid, span_id=sid, source="llm-judge")
 
     return answer
+
 
 # --- Run ---
 if __name__ == "__main__":

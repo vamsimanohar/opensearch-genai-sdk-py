@@ -8,7 +8,7 @@ and Data Prepper endpoints.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import ReadableSpan
@@ -41,7 +41,7 @@ class SigV4OTLPSpanExporter(OTLPSpanExporter):
         self,
         *args,
         service: str = "osis",
-        region: Optional[str] = None,
+        region: str | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)

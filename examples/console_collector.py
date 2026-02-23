@@ -19,14 +19,12 @@ from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProces
 # --- Set up ConsoleSpanExporter as the global tracer provider ---
 # This prints every span to stdout as JSON when the span ends.
 # No collector, no Data Prepper, no network needed.
-provider = TracerProvider(
-    resource=Resource.create({"service.name": "console-collector-demo"})
-)
+provider = TracerProvider(resource=Resource.create({"service.name": "console-collector-demo"}))
 provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
 trace.set_tracer_provider(provider)
 
 # --- Now import SDK decorators (they use the global provider) ---
-from opensearch_genai_sdk import workflow, task, agent, tool, score
+from opensearch_genai_sdk import agent, task, tool, workflow
 
 
 @tool(name="web_search")
@@ -59,9 +57,9 @@ def run_pipeline(question: str) -> str:
 # --- Run ---
 if __name__ == "__main__":
     result = run_pipeline("What is OpenSearch?")
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Final answer: {result}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print("\nAll spans above were printed by ConsoleSpanExporter.")
     print("No collector needed — useful for local dev and debugging.")
 

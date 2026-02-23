@@ -11,11 +11,8 @@ Usage:
     python examples/agent_http.py
 """
 
-import json
 import uvicorn
-from datetime import datetime, timezone
 from fastapi import FastAPI, Request, Response
-
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
     ExportTraceServiceRequest,
     ExportTraceServiceResponse,
@@ -88,12 +85,19 @@ def print_span(span, resource_attrs: dict):
     print(f"  {DIM}Service: {service}{RESET}")
 
     # Print interesting attributes
-    for key in ["gen_ai.entity.input", "gen_ai.entity.output",
-                "gen_ai.tool.call.arguments", "gen_ai.tool.call.result",
-                "gen_ai.evaluation.name", "gen_ai.evaluation.score.value",
-                "gen_ai.evaluation.source", "gen_ai.evaluation.explanation",
-                "gen_ai.evaluation.trace_id", "gen_ai.evaluation.span_id",
-                "gen_ai.conversation.id"]:
+    for key in [
+        "gen_ai.entity.input",
+        "gen_ai.entity.output",
+        "gen_ai.tool.call.arguments",
+        "gen_ai.tool.call.result",
+        "gen_ai.evaluation.name",
+        "gen_ai.evaluation.score.value",
+        "gen_ai.evaluation.source",
+        "gen_ai.evaluation.explanation",
+        "gen_ai.evaluation.trace_id",
+        "gen_ai.evaluation.span_id",
+        "gen_ai.conversation.id",
+    ]:
         if key in attrs:
             val = attrs[key]
             # Truncate long values
@@ -138,9 +142,9 @@ if __name__ == "__main__":
     print(f"{BOLD}{'=' * 70}{RESET}")
     print(f"{BOLD}  Mini OTEL Collector — HTTP on port 4318{RESET}")
     print(f"{BOLD}{'=' * 70}{RESET}")
-    print(f"  Listening: http://0.0.0.0:4318/v1/traces")
-    print(f"  Protocol:  OTLP/HTTP (protobuf)")
+    print("  Listening: http://0.0.0.0:4318/v1/traces")
+    print("  Protocol:  OTLP/HTTP (protobuf)")
     print()
-    print(f"  Test with: python examples/agent_http.py")
+    print("  Test with: python examples/agent_http.py")
     print(f"{BOLD}{'=' * 70}{RESET}\n")
     uvicorn.run(app, host="0.0.0.0", port=4318, log_level="warning")

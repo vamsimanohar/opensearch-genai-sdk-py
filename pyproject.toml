@@ -8,6 +8,20 @@ authors = [
 license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.10,<4"
+keywords = ["opentelemetry", "tracing", "llm", "ai", "observability", "opensearch", "genai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "opentelemetry-api>=1.20.0,<2",
     "opentelemetry-sdk>=1.20.0,<2",
@@ -61,6 +75,11 @@ minimal = [
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+    "bandit>=1.7.5",
+    "safety>=2.3.0",
 ]
 all = [
     "opensearch-genai-sdk[aws]",
@@ -68,6 +87,10 @@ all = [
 
 [project.urls]
 Repository = "https://github.com/vamsimanohar/opensearch-genai-sdk"
+Homepage = "https://github.com/vamsimanohar/opensearch-genai-sdk"
+Documentation = "https://github.com/vamsimanohar/opensearch-genai-sdk#readme"
+"Bug Tracker" = "https://github.com/vamsimanohar/opensearch-genai-sdk/issues"
+Changelog = "https://github.com/vamsimanohar/opensearch-genai-sdk/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]
@@ -84,4 +107,21 @@ line-length = 100
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W", "I", "N", "UP", "S", "B"]
+ignore = [
+    "S101",  # Use of assert detected (OK in tests)
+    "S113",  # Probable use of requests without timeout (handled by OTEL SDK)
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --tb=short"

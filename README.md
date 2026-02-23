@@ -116,7 +116,7 @@ register(
 | `grpc://` | gRPC (insecure) |
 | `grpcs://` | gRPC (TLS) |
 
-**Auth:** When `auth="auto"` (default), SigV4 signing is enabled automatically for `*.amazonaws.com` endpoints.
+**Auth:** Use `auth="sigv4"` for AWS endpoints requiring SigV4 signing. `auth="auto"` (default) uses plain authentication.
 
 ### Decorators
 
