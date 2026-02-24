@@ -1,4 +1,4 @@
-"""Auto-instrumentation with opensearch-genai-sdk.
+"""Auto-instrumentation with opensearch-genai-sdk-py.
 
 register() auto-discovers and activates any installed OpenTelemetry
 or OpenInference instrumentors. Just pip install them — no code changes.
@@ -7,8 +7,8 @@ This example shows OpenAI auto-instrumentation: every openai.chat.completions
 call is automatically traced as an OTEL span with gen_ai.* attributes.
 """
 
-# Step 1: pip install opensearch-genai-sdk opentelemetry-instrumentation-openai
-#   (or: pip install opensearch-genai-sdk openinference-instrumentation-openai)
+# Step 1: pip install opensearch-genai-sdk-py opentelemetry-instrumentation-openai
+#   (or: pip install opensearch-genai-sdk-py openinference-instrumentation-openai)
 #
 # Both entry point groups are discovered:
 #   - opentelemetry_instrumentor  (OpenLLMetry ecosystem)

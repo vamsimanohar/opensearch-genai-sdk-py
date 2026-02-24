@@ -28,7 +28,7 @@ We will acknowledge receipt of your vulnerability report within 48 hours and sen
 
 ## Security Considerations
 
-When using opensearch-genai-sdk:
+When using opensearch-genai-sdk-py:
 
 1. **Credentials**: Ensure AWS credentials are stored securely and follow the principle of least privilege
 2. **Network**: Use HTTPS/TLS for all OTLP connections in production

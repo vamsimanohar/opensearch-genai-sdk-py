@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-XX-XX
 
 ### Added
-- Initial release of opensearch-genai-sdk
+- Initial release of opensearch-genai-sdk-py
 - OTEL-native tracing with decorators (`@workflow`, `@task`, `@agent`, `@tool`)
 - Auto-instrumentation for popular LLM libraries
 - Scoring functionality with `score()` function

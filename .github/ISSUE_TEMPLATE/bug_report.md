@@ -33,7 +33,7 @@ A clear and concise description of what you expected to happen.
 **Environment (please complete the following information):**
  - OS: [e.g. Ubuntu 20.04, macOS 12.0, Windows 11]
  - Python version: [e.g. 3.11.0]
- - opensearch-genai-sdk version: [e.g. 0.2.0]
+ - opensearch-genai-sdk-py version: [e.g. 0.2.0]
  - OpenTelemetry version: [e.g. 1.20.0]
 
 **Additional context**

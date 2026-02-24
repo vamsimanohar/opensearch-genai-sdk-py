@@ -14,13 +14,13 @@ OTEL-native tracing and scoring for LLM applications. Instrument your AI workflo
 ## Installation
 
 ```bash
-pip install opensearch-genai-sdk
+pip install opensearch-genai-sdk-py
 ```
 
 With AWS SigV4 support:
 
 ```bash
-pip install opensearch-genai-sdk[aws]
+pip install opensearch-genai-sdk-py[aws]
 ```
 
 ## Quick Start
@@ -62,7 +62,7 @@ score(name="relevance", value=0.95, trace_id="...", source="llm-judge")
 │     │            │         │        │                │
 │     └────────────┴─────────┴────────┘                │
 │                     │                                │
-│              opensearch-genai-sdk                     │
+│            opensearch-genai-sdk-py                    │
 ├─────────────────────────────────────────────────────┤
 │  register()                                          │
 │  ┌─────────────────────────────────────────────┐    │
@@ -124,8 +124,8 @@ Four decorators for tracing application logic. Each creates an OTEL span with `g
 
 | Decorator | Use for | Operation name | Span name format |
 |---|---|---|---|
-| `@workflow("name")` | Top-level orchestration | `workflow` | `name` |
-| `@task("name")` | Units of work | `task` | `name` |
+| `@workflow("name")` | Top-level orchestration | `invoke_agent` | `name` |
+| `@task("name")` | Units of work | `invoke_agent` | `name` |
 | `@agent("name")` | Autonomous agent logic | `invoke_agent` | `invoke_agent name` |
 | `@tool("name")` | Tool/function calls | `execute_tool` | `execute_tool name` |
 
@@ -136,13 +136,12 @@ All decorators accept `name` (defaults to function's `__qualname__`) and `versio
 | Attribute | Set by |
 |---|---|
 | `gen_ai.operation.name` | All decorators |
-| `gen_ai.{type}.name` | All decorators (`gen_ai.agent.name`, `gen_ai.tool.name`, etc.) |
-| `gen_ai.entity.input` / `gen_ai.entity.output` | `@workflow`, `@task` |
+| `gen_ai.agent.name` / `gen_ai.tool.name` | All decorators |
+| `gen_ai.input.messages` / `gen_ai.output.messages` | `@workflow`, `@task`, `@agent` |
 | `gen_ai.tool.call.arguments` / `gen_ai.tool.call.result` | `@tool` |
 | `gen_ai.tool.type` | `@tool` (always `"function"`) |
 | `gen_ai.tool.description` | `@tool` (from docstring, if present) |
-| `gen_ai.agent.version` | `@agent` (when `version` is set) |
-| `gen_ai.entity.version` | `@workflow`, `@task` (when `version` is set) |
+| `gen_ai.agent.version` | All decorators (when `version` is set) |
 
 **Supported function types:** sync, async, generators, async generators. Errors are captured as span status + exception events.
 

@@ -1,4 +1,4 @@
-"""Shared test fixtures for opensearch-genai-sdk tests.
+"""Shared test fixtures for opensearch-genai-sdk-py tests.
 
 Sets up a TracerProvider with InMemorySpanExporter so tests can capture
 and assert on spans without a real collector.

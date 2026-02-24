@@ -1,4 +1,4 @@
-"""Async function tracing with opensearch-genai-sdk.
+"""Async function tracing with opensearch-genai-sdk-py.
 
 All decorators support async functions natively — no special config.
 """

@@ -1,9 +1,9 @@
-"""AWS SigV4 authentication with opensearch-genai-sdk.
+"""AWS SigV4 authentication with opensearch-genai-sdk-py.
 
 When your Data Prepper or OpenSearch Ingestion pipeline is hosted on AWS,
 you must specify auth="sigv4" to enable SigV4 signing for OTLP requests.
 
-Requires: pip install opensearch-genai-sdk[aws]
+Requires: pip install opensearch-genai-sdk-py[aws]
 """
 
 from opensearch_genai_sdk import register, score, workflow

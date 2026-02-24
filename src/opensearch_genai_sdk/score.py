@@ -20,7 +20,7 @@ from opentelemetry import trace
 
 logger = logging.getLogger(__name__)
 
-_TRACER_NAME = "opensearch-genai-sdk-scores"
+_TRACER_NAME = "opensearch-genai-sdk-py-scores"
 
 
 def score(

@@ -25,13 +25,22 @@ logger = logging.getLogger(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-# Span kind values following OTEL GenAI semantic conventions
+# Internal decorator type identifiers (used for attribute routing and span naming)
 SPAN_KIND_WORKFLOW = "workflow"
 SPAN_KIND_TASK = "task"
 SPAN_KIND_AGENT = "invoke_agent"
 SPAN_KIND_TOOL = "execute_tool"
 
-_TRACER_NAME = "opensearch-genai-sdk"
+# gen_ai.operation.name values per OTEL GenAI semantic conventions
+# workflow and task both map to invoke_agent (no workflow/task values in semconv)
+_OPERATION_NAME = {
+    SPAN_KIND_WORKFLOW: "invoke_agent",
+    SPAN_KIND_TASK: "invoke_agent",
+    SPAN_KIND_AGENT: "invoke_agent",
+    SPAN_KIND_TOOL: "execute_tool",
+}
+
+_TRACER_NAME = "opensearch-genai-sdk-py"
 
 
 def workflow(
@@ -226,22 +235,20 @@ def _set_span_attributes(
     fn_doc: str | None = None,
 ) -> None:
     """Set standard attributes on a span."""
-    span.set_attribute("gen_ai.operation.name", span_kind)
+    span.set_attribute("gen_ai.operation.name", _OPERATION_NAME[span_kind])
 
     # Use type-specific name attributes matching gen_ai semantic conventions
+    # workflow and task use gen_ai.agent.name (no workflow/task name attrs in semconv)
     _NAME_ATTR = {
-        SPAN_KIND_WORKFLOW: "gen_ai.workflow.name",
-        SPAN_KIND_TASK: "gen_ai.task.name",
+        SPAN_KIND_WORKFLOW: "gen_ai.agent.name",
+        SPAN_KIND_TASK: "gen_ai.agent.name",
         SPAN_KIND_AGENT: "gen_ai.agent.name",
         SPAN_KIND_TOOL: "gen_ai.tool.name",
     }
-    span.set_attribute(_NAME_ATTR.get(span_kind, "gen_ai.entity.name"), entity_name)
+    span.set_attribute(_NAME_ATTR[span_kind], entity_name)
 
     if version is not None:
-        if span_kind == SPAN_KIND_AGENT:
-            span.set_attribute("gen_ai.agent.version", str(version))
-        else:
-            span.set_attribute("gen_ai.entity.version", version)
+        span.set_attribute("gen_ai.agent.version", str(version))
 
     # Tool-specific attributes from semconv
     if span_kind == SPAN_KIND_TOOL:
@@ -279,9 +286,9 @@ def _set_input(
         if len(serialized) > 10_000:
             serialized = serialized[:10_000] + "...(truncated)"
 
-        # Tool spans use semconv attribute name
+        # Tool spans use semconv attribute name; all others use gen_ai.input.messages
         attr_key = (
-            "gen_ai.tool.call.arguments" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.input"
+            "gen_ai.tool.call.arguments" if span_kind == SPAN_KIND_TOOL else "gen_ai.input.messages"
         )
         span.set_attribute(attr_key, serialized)
     except Exception:
@@ -297,9 +304,9 @@ def _set_output(span: trace.Span, span_kind: str, result: Any) -> None:
         if len(serialized) > 10_000:
             serialized = serialized[:10_000] + "...(truncated)"
 
-        # Tool spans use semconv attribute name
+        # Tool spans use semconv attribute name; all others use gen_ai.output.messages
         attr_key = (
-            "gen_ai.tool.call.result" if span_kind == SPAN_KIND_TOOL else "gen_ai.entity.output"
+            "gen_ai.tool.call.result" if span_kind == SPAN_KIND_TOOL else "gen_ai.output.messages"
         )
         span.set_attribute(attr_key, serialized)
     except Exception:

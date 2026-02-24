@@ -52,7 +52,7 @@ class SigV4OTLPSpanExporter(OTLPSpanExporter):
         except ImportError:
             raise ImportError(
                 "botocore is required for SigV4 authentication. "
-                "Install it with: pip install opensearch-genai-sdk[aws]"
+                "Install it with: pip install opensearch-genai-sdk-py[aws]"
             )
 
         self._botocore_session = botocore.session.get_session()

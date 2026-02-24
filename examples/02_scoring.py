@@ -1,4 +1,4 @@
-"""Scoring with opensearch-genai-sdk.
+"""Scoring with opensearch-genai-sdk-py.
 
 Shows how to submit evaluation scores as OTEL spans. Scores flow through
 the same exporter pipeline as traces — same SigV4 auth, same Data Prepper

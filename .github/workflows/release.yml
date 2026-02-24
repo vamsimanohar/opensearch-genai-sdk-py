@@ -115,7 +115,7 @@ jobs:
           git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" >> CHANGELOG.md
         else
           echo "## Initial Release" > CHANGELOG.md
-          echo "First release of opensearch-genai-sdk" >> CHANGELOG.md
+          echo "First release of opensearch-genai-sdk-py" >> CHANGELOG.md
         fi
 
     - name: Create Release

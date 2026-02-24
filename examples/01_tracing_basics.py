@@ -1,4 +1,4 @@
-"""Basic tracing with opensearch-genai-sdk.
+"""Basic tracing with opensearch-genai-sdk-py.
 
 Shows how to register the SDK and trace custom functions
 with @workflow, @task, @agent, and @tool decorators.

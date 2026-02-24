@@ -1,5 +1,5 @@
 [project]
-name = "opensearch-genai-sdk"
+name = "opensearch-genai-sdk-py"
 version = "0.2.0"
 description = "OpenSearch AI Observability SDK — OTEL-native tracing and scoring for LLM applications"
 authors = [
@@ -82,15 +82,15 @@ dev = [
     "safety>=2.3.0",
 ]
 all = [
-    "opensearch-genai-sdk[aws]",
+    "opensearch-genai-sdk-py[aws]",
 ]
 
 [project.urls]
-Repository = "https://github.com/vamsimanohar/opensearch-genai-sdk"
-Homepage = "https://github.com/vamsimanohar/opensearch-genai-sdk"
-Documentation = "https://github.com/vamsimanohar/opensearch-genai-sdk#readme"
-"Bug Tracker" = "https://github.com/vamsimanohar/opensearch-genai-sdk/issues"
-Changelog = "https://github.com/vamsimanohar/opensearch-genai-sdk/blob/main/CHANGELOG.md"
+Repository = "https://github.com/vamsimanohar/opensearch-genai-sdk-py"
+Homepage = "https://github.com/vamsimanohar/opensearch-genai-sdk-py"
+Documentation = "https://github.com/vamsimanohar/opensearch-genai-sdk-py#readme"
+"Bug Tracker" = "https://github.com/vamsimanohar/opensearch-genai-sdk-py/issues"
+Changelog = "https://github.com/vamsimanohar/opensearch-genai-sdk-py/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]
