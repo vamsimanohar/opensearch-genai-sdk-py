@@ -4,6 +4,7 @@ OTEL-native tracing and scoring for LLM applications.
 """
 
 from opensearch_genai_sdk.decorators import agent, task, tool, workflow
+from opensearch_genai_sdk.exporters import SigV4OTLPSpanExporter
 from opensearch_genai_sdk.register import register
 from opensearch_genai_sdk.score import score
 
@@ -17,4 +18,6 @@ __all__ = [
     "tool",
     # Scoring
     "score",
+    # Exporters
+    "SigV4OTLPSpanExporter",
 ]
