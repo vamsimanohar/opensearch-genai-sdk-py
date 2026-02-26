@@ -11,6 +11,11 @@ OTEL-native tracing and scoring for LLM applications. Instrument your AI workflo
 - **AWS SigV4** — built-in SigV4 signing for AWS-hosted OpenSearch and Data Prepper endpoints
 - **Zero lock-in** — remove a decorator and your code still works; everything is standard OTEL
 
+## Requirements
+
+- **Python**: 3.10, 3.11, 3.12, or 3.13
+- **OpenTelemetry SDK**: ≥1.20.0, <2
+
 ## Installation
 
 ```bash
