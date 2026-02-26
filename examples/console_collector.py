@@ -24,7 +24,7 @@ provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
 trace.set_tracer_provider(provider)
 
 # --- Now import SDK decorators (they use the global provider) ---
-from opensearch_genai_sdk import agent, task, tool, workflow
+from opensearch_genai_sdk_py import agent, task, tool, workflow
 
 
 @tool(name="web_search")

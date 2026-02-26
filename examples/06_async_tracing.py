@@ -5,7 +5,7 @@ All decorators support async functions natively — no special config.
 
 import asyncio
 
-from opensearch_genai_sdk import register, task, tool, workflow
+from opensearch_genai_sdk_py import register, task, tool, workflow
 
 # --- Setup ---
 register(endpoint="http://localhost:21890/opentelemetry/v1/traces")

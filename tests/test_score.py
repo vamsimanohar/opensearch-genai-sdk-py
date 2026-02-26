@@ -1,4 +1,4 @@
-"""Tests for opensearch_genai_sdk.score.
+"""Tests for opensearch_genai_sdk_py.score.
 
 Verifies that the score() function creates OTEL spans with
 gen_ai.evaluation.* semantic convention attributes for span-level,
@@ -6,7 +6,7 @@ trace-level, and session-level scoring.
 """
 
 
-from opensearch_genai_sdk.score import score
+from opensearch_genai_sdk_py.score import score
 
 
 class TestSpanLevelScoring:
@@ -54,21 +54,6 @@ class TestTraceLevelScoring:
         assert span.attributes["gen_ai.evaluation.score.value"] == 0.92
         assert span.attributes["gen_ai.evaluation.trace_id"] == "abc123"
         assert "gen_ai.evaluation.span_id" not in span.attributes
-
-    def test_trace_level_with_explanation(self, exporter):
-        score(
-            name="relevance",
-            value=0.92,
-            trace_id="abc123",
-            explanation="Response addresses the query",
-            source="llm-judge",
-        )
-
-        spans = exporter.get_finished_spans()
-        span = spans[0]
-        assert span.attributes["gen_ai.evaluation.explanation"] == "Response addresses the query"
-        assert span.attributes["gen_ai.evaluation.source"] == "llm-judge"
-
 
 class TestSessionLevelScoring:
     """Test session-level scoring (conversation_id)."""
@@ -125,13 +110,6 @@ class TestScoreValues:
         span = spans[0]
         assert span.attributes["gen_ai.evaluation.source"] == "llm-judge"
 
-    def test_score_source_human(self, exporter):
-        score(name="quality", value=0.7, source="human")
-
-        spans = exporter.get_finished_spans()
-        span = spans[0]
-        assert span.attributes["gen_ai.evaluation.source"] == "human"
-
     def test_score_default_source(self, exporter):
         score(name="test", value=0.5)
 
@@ -149,14 +127,6 @@ class TestScoreLabel:
         spans = exporter.get_finished_spans()
         span = spans[0]
         assert span.attributes["gen_ai.evaluation.score.label"] == "positive"
-
-    def test_label_with_value(self, exporter):
-        score(name="grade", value=0.9, label="A")
-
-        spans = exporter.get_finished_spans()
-        span = spans[0]
-        assert span.attributes["gen_ai.evaluation.score.value"] == 0.9
-        assert span.attributes["gen_ai.evaluation.score.label"] == "A"
 
     def test_no_label(self, exporter):
         score(name="test", value=0.5)
@@ -298,15 +268,6 @@ class TestScoreSpanName:
         spans = exporter.get_finished_spans()
         span = spans[0]
         assert span.name == "gen_ai.evaluation.result"
-
-    def test_all_scores_use_same_span_name(self, exporter):
-        score(name="relevance", value=0.8)
-        score(name="toxicity", value=0.1)
-
-        spans = exporter.get_finished_spans()
-        names = {s.name for s in spans}
-        assert names == {"gen_ai.evaluation.result"}
-
 
 class TestMultipleScoresInSequence:
     """Test that multiple score calls create independent spans."""

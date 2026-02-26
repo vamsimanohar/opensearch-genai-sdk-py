@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
 
     - name: Run tests
       run: |
-        pytest tests/ -v --tb=short
+        pytest tests/ -v --tb=short --cov=opensearch_genai_sdk_py --cov-report=xml
 
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.11'
@@ -62,7 +62,7 @@ jobs:
       run: ruff format --check .
 
     - name: Run mypy
-      run: mypy src/opensearch_genai_sdk --ignore-missing-imports
+      run: mypy src/opensearch_genai_sdk_py --ignore-missing-imports
 
   security:
     name: Security Scan

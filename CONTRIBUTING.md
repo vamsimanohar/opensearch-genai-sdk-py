@@ -80,7 +80,7 @@ Feature requests are welcome! Please use the [feature request template](.github/
    ruff format .
 
    # Type checking
-   mypy src/opensearch_genai_sdk --ignore-missing-imports
+   mypy src/opensearch_genai_sdk_py --ignore-missing-imports
    ```
 
 5. **Update Documentation**: Update the README, docstrings, or examples as needed

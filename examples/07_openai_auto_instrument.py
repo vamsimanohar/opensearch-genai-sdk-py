@@ -14,7 +14,7 @@ call is automatically traced as an OTEL span with gen_ai.* attributes.
 #   - opentelemetry_instrumentor  (OpenLLMetry ecosystem)
 #   - openinference_instrumentor  (Phoenix/Arize ecosystem)
 
-from opensearch_genai_sdk import register, workflow
+from opensearch_genai_sdk_py import register, workflow
 
 # Step 2: register() auto-instruments all installed libraries
 register(

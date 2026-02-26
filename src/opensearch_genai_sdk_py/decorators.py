@@ -145,13 +145,20 @@ def _make_decorator(
         else:
             span_name = entity_name
         fn_doc = fn.__doc__
-        tracer = trace.get_tracer(_TRACER_NAME)
         sig = inspect.signature(fn)
+        # NOTE: tracer is intentionally fetched inside each wrapper (at call
+        # time), NOT here at decoration time.  The OTEL ProxyTracer caches
+        # the backing tracer on first use; fetching it here would lock in
+        # whatever provider is active at import time (often the no-op default)
+        # before register() has been called.  Fetching at call time ensures
+        # the wrapper always uses the provider that is current when the
+        # function is actually invoked.
 
         if inspect.iscoroutinefunction(fn):
 
             @functools.wraps(fn)
             async def async_wrapper(*args, **kwargs):
+                tracer = trace.get_tracer(_TRACER_NAME)
                 with tracer.start_as_current_span(span_name) as span:
                     _set_span_attributes(
                         span, span_kind, entity_name, version, sig, args, kwargs, fn_doc
@@ -171,12 +178,17 @@ def _make_decorator(
 
             @functools.wraps(fn)
             def gen_wrapper(*args, **kwargs):
+                tracer = trace.get_tracer(_TRACER_NAME)
                 with tracer.start_as_current_span(span_name) as span:
                     _set_span_attributes(
                         span, span_kind, entity_name, version, sig, args, kwargs, fn_doc
                     )
                     try:
-                        yield from fn(*args, **kwargs)
+                        collected = []
+                        for item in fn(*args, **kwargs):
+                            collected.append(item)
+                            yield item
+                        _set_output(span, span_kind, collected)
                     except Exception as exc:
                         span.set_status(trace.StatusCode.ERROR, str(exc))
                         span.record_exception(exc)
@@ -188,13 +200,17 @@ def _make_decorator(
 
             @functools.wraps(fn)
             async def async_gen_wrapper(*args, **kwargs):
+                tracer = trace.get_tracer(_TRACER_NAME)
                 with tracer.start_as_current_span(span_name) as span:
                     _set_span_attributes(
                         span, span_kind, entity_name, version, sig, args, kwargs, fn_doc
                     )
                     try:
+                        collected = []
                         async for item in fn(*args, **kwargs):
+                            collected.append(item)
                             yield item
+                        _set_output(span, span_kind, collected)
                     except Exception as exc:
                         span.set_status(trace.StatusCode.ERROR, str(exc))
                         span.record_exception(exc)
@@ -206,6 +222,7 @@ def _make_decorator(
 
             @functools.wraps(fn)
             def sync_wrapper(*args, **kwargs):
+                tracer = trace.get_tracer(_TRACER_NAME)
                 with tracer.start_as_current_span(span_name) as span:
                     _set_span_attributes(
                         span, span_kind, entity_name, version, sig, args, kwargs, fn_doc

@@ -40,7 +40,7 @@ trace.set_tracer_provider(provider)
 # ---------------------------------------------------------------------------
 # 2. Import SDK decorators and score (they pick up the global provider).
 # ---------------------------------------------------------------------------
-from opensearch_genai_sdk import agent, score, task, tool, workflow
+from opensearch_genai_sdk_py import agent, score, task, tool, workflow
 
 # ---------------------------------------------------------------------------
 # Simulated knowledge base for the "web search"

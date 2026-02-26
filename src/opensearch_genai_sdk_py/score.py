@@ -60,7 +60,7 @@ def score(
         metadata: Optional arbitrary metadata.
 
     Example:
-        from opensearch_genai_sdk import score
+        from opensearch_genai_sdk_py import score
 
         # Span-level scoring
         score(

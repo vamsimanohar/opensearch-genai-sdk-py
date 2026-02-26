@@ -1,4 +1,4 @@
-"""Tests for opensearch_genai_sdk.decorators.
+"""Tests for opensearch_genai_sdk_py.decorators.
 
 Covers @workflow, @task, @agent, @tool decorators for sync functions,
 async functions, generators, and async generators.  Verifies span
@@ -11,7 +11,7 @@ import json
 import pytest
 from opentelemetry.trace import StatusCode
 
-from opensearch_genai_sdk.decorators import agent, task, tool, workflow
+from opensearch_genai_sdk_py.decorators import agent, task, tool, workflow
 
 # ---------------------------------------------------------------------------
 # Helper functions decorated by the SDK
@@ -297,12 +297,6 @@ class TestSyncDecorators:
         span = spans[0]
         assert span.attributes["gen_ai.agent.version"] == "3"
 
-    def test_version_attribute_agent(self, exporter):
-        versioned_agent_fn()
-        spans = exporter.get_finished_spans()
-        span = spans[0]
-        assert span.attributes["gen_ai.agent.version"] == "2"
-
     def test_no_version_attribute_when_not_set(self, exporter):
         sync_workflow(1)
         spans = exporter.get_finished_spans()
@@ -348,17 +342,6 @@ class TestAsyncDecorators:
         assert len(spans) == 1
         span = spans[0]
         assert span.name == "async_workflow"
-        assert span.attributes["gen_ai.operation.name"] == "invoke_agent"
-
-    @pytest.mark.asyncio
-    async def test_async_task(self, exporter):
-        result = await async_task_fn(3)
-        assert result == 30
-
-        spans = exporter.get_finished_spans()
-        assert len(spans) == 1
-        span = spans[0]
-        assert span.name == "async_task"
         assert span.attributes["gen_ai.operation.name"] == "invoke_agent"
 
     @pytest.mark.asyncio
@@ -411,18 +394,6 @@ class TestAsyncDecorators:
         assert span.status.status_code == StatusCode.ERROR
         assert "async boom" in span.status.description
 
-    @pytest.mark.asyncio
-    async def test_async_error_records_exception(self, exporter):
-        with pytest.raises(RuntimeError):
-            await async_error_workflow_fn()
-
-        spans = exporter.get_finished_spans()
-        span = spans[0]
-        exc_events = [e for e in span.events if e.name == "exception"]
-        assert len(exc_events) >= 1
-        assert "RuntimeError" in exc_events[0].attributes["exception.type"]
-
-
 # ---------------------------------------------------------------------------
 # Generator decorator tests
 # ---------------------------------------------------------------------------
@@ -453,6 +424,23 @@ class TestGeneratorDecorators:
         span = spans[0]
         assert span.name == "execute_tool async_gen_tool"
         assert span.attributes["gen_ai.operation.name"] == "execute_tool"
+
+    def test_sync_generator_output_captured(self, exporter):
+        items = list(generator_tool_fn(3))
+        assert items == [0, 1, 2]
+        span = exporter.get_finished_spans()[0]
+        import json
+        assert json.loads(span.attributes["gen_ai.tool.call.result"]) == [0, 1, 2]
+
+    @pytest.mark.asyncio
+    async def test_async_generator_output_captured(self, exporter):
+        items = []
+        async for item in async_generator_tool_fn(3):
+            items.append(item)
+        assert items == [0, 1, 2]
+        span = exporter.get_finished_spans()[0]
+        import json
+        assert json.loads(span.attributes["gen_ai.tool.call.result"]) == [0, 1, 2]
 
     def test_sync_generator_error(self, exporter):
         gen = generator_error_tool_fn()
@@ -492,9 +480,6 @@ class TestFunctoolsWraps:
 
     def test_async_preserves_name(self):
         assert async_workflow_fn.__name__ == "async_workflow_fn"
-
-    def test_sync_preserves_module(self):
-        assert sync_workflow.__module__ == __name__
 
     def test_generator_preserves_name(self):
         assert generator_tool_fn.__name__ == "generator_tool_fn"

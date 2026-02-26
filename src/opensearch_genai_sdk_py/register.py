@@ -76,9 +76,10 @@ def register(
             Defaults to OPENSEARCH_PROJECT env var or "default".
         service_name: Alias for project_name.
         auth: Authentication method.
-            - "auto": Use plain authentication (no special signing).
-            - "sigv4": Use AWS SigV4 signing for AWS endpoints.
-            - "none": No authentication.
+            - "auto": Auto-detect. Uses SigV4 for *.amazonaws.com endpoints,
+              plain HTTP for everything else. Requires botocore for AWS URLs.
+            - "sigv4": Always use AWS SigV4 signing.
+            - "none": Always plain HTTP, no signing.
         region: AWS region for SigV4. Auto-detected if not provided.
         service: AWS service name for SigV4 signing (default: "osis").
         batch: Use BatchSpanProcessor (True) or SimpleSpanProcessor (False).
@@ -174,6 +175,12 @@ def _infer_protocol(endpoint: str, protocol: str | None) -> str:
     return "http"
 
 
+def _is_aws_endpoint(endpoint: str) -> bool:
+    """Return True if the endpoint URL is an AWS-hosted service."""
+    host = (urlparse(endpoint).hostname or "").lower()
+    return host.endswith(".amazonaws.com") or host.endswith(".aws.amazon.com")
+
+
 def _create_exporter(
     endpoint: str,
     protocol: str | None,
@@ -184,7 +191,15 @@ def _create_exporter(
 ) -> SpanExporter:
     """Create the appropriate OTLP exporter based on protocol and auth."""
     resolved_protocol = _infer_protocol(endpoint, protocol)
-    use_sigv4 = auth == "sigv4"
+
+    if auth == "sigv4":
+        use_sigv4 = True
+    elif auth == "auto":
+        use_sigv4 = _is_aws_endpoint(endpoint)
+        if use_sigv4:
+            logger.info("Auto-detected AWS endpoint, enabling SigV4 signing")
+    else:  # "none" or any other value
+        use_sigv4 = False
 
     if resolved_protocol == "grpc":
         return _create_grpc_exporter(endpoint, use_sigv4, region, service, headers)
@@ -201,10 +216,10 @@ def _create_http_exporter(
 ) -> SpanExporter:
     """Create an HTTP OTLP exporter, with optional SigV4."""
     if use_sigv4:
-        from opensearch_genai_sdk.exporters import SigV4OTLPSpanExporter
+        from opensearch_genai_sdk_py.exporters import AWSSigV4OTLPExporter
 
         logger.info("Using SigV4 + HTTP for endpoint: %s", endpoint)
-        return SigV4OTLPSpanExporter(
+        return AWSSigV4OTLPExporter(
             endpoint=endpoint,
             service=service,
             region=region,

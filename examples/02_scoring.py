@@ -5,7 +5,7 @@ the same exporter pipeline as traces — same SigV4 auth, same Data Prepper
 endpoint. Supports three scoring levels: span, trace, and session.
 """
 
-from opensearch_genai_sdk import register, score
+from opensearch_genai_sdk_py import register, score
 
 # --- Setup ---
 register(endpoint="http://localhost:21890/opentelemetry/v1/traces")

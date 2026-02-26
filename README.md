@@ -22,16 +22,34 @@ OTEL-native tracing and scoring for LLM applications. Instrument your AI workflo
 pip install opensearch-genai-sdk-py
 ```
 
-With AWS SigV4 support:
+The core package includes the OTEL SDK and exporters. Auto-instrumentation of LLM libraries is opt-in — install only the providers you use:
 
 ```bash
+# Single provider
+pip install opensearch-genai-sdk-py[openai]
+pip install opensearch-genai-sdk-py[anthropic]
+pip install opensearch-genai-sdk-py[bedrock]
+pip install opensearch-genai-sdk-py[langchain]
+
+# Multiple providers
+pip install "opensearch-genai-sdk-py[openai,anthropic]"
+
+# All instrumentors at once
+pip install opensearch-genai-sdk-py[instrumentors]
+
+# AWS SigV4 signing for OpenSearch Ingestion / OpenSearch Service
 pip install opensearch-genai-sdk-py[aws]
+
+# Everything
+pip install opensearch-genai-sdk-py[all]
 ```
+
+**Available extras:** `openai`, `anthropic`, `cohere`, `mistral`, `groq`, `ollama`, `google`, `bedrock`, `langchain`, `llamaindex`, `instrumentors` (all of the above), `aws`, `all`
 
 ## Quick Start
 
 ```python
-from opensearch_genai_sdk import register, workflow, agent, tool, score
+from opensearch_genai_sdk_py import register, workflow, agent, tool, score
 
 # 1. Initialize tracing (one line)
 register(endpoint="http://localhost:4318/v1/traces")
@@ -107,7 +125,7 @@ Configures the OTEL tracing pipeline. Call once at startup.
 register(
     endpoint="https://pipeline.us-east-1.osis.amazonaws.com/v1/traces",
     service_name="my-app",
-    auth="auto",           # "auto" | "sigv4" | "none"
+    auth="auto",           # "auto"/"none" = plain (default) | "sigv4" = AWS SigV4
     batch=True,            # BatchSpanProcessor (True) or Simple (False)
     auto_instrument=True,  # discover installed instrumentor packages
 )
@@ -121,7 +139,10 @@ register(
 | `grpc://` | gRPC (insecure) |
 | `grpcs://` | gRPC (TLS) |
 
-**Auth:** Use `auth="sigv4"` for AWS endpoints requiring SigV4 signing. `auth="auto"` (default) uses plain authentication.
+**Auth:**
+- `auth="auto"` (default) — auto-detects AWS endpoints (`*.amazonaws.com`) and enables SigV4; uses plain HTTP for everything else.
+- `auth="sigv4"` — always use SigV4 (requires `pip install opensearch-genai-sdk-py[aws]`).
+- `auth="none"` — always plain HTTP, no signing.
 
 ### Decorators
 
@@ -218,19 +239,16 @@ Scores are emitted as `gen_ai.evaluation.result` spans with `gen_ai.evaluation.*
 
 ## Auto-Instrumented Libraries
 
-`register()` automatically discovers and activates installed instrumentor packages. No code changes needed — just install the package and calls are traced.
+`register()` automatically discovers and activates any installed instrumentor packages via OTEL entry points. No code changes needed — install the extras for the providers you use and their calls are traced automatically.
 
-**LLM Providers:**
-OpenAI, Anthropic, Google Generative AI, Cohere, Mistral AI, Groq, Ollama, Together, Replicate, Writer, Voyage AI, Aleph Alpha
+| Category | Extras / packages |
+|---|---|
+| LLM providers | `[openai]`, `[anthropic]`, `[cohere]`, `[mistral]`, `[groq]`, `[ollama]` |
+| Cloud AI | `[bedrock]`, `[google]` (Vertex AI + Generative AI) |
+| Frameworks | `[langchain]`, `[llamaindex]` |
+| All of the above | `[instrumentors]` |
 
-**Cloud AI Services:**
-AWS Bedrock, AWS SageMaker, Google Vertex AI, IBM watsonx
-
-**Frameworks:**
-LangChain, LlamaIndex, Haystack, CrewAI, Agno, MCP, Transformers, OpenAI Agents
-
-**Vector Databases:**
-ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, LanceDB, Marqo
+Additional instrumentors (Together, Replicate, Writer, Voyage AI, Aleph Alpha, SageMaker, watsonx, Haystack, CrewAI, Agno, MCP, Transformers, ChromaDB, Pinecone, Qdrant, Weaviate, Milvus, LanceDB, Marqo) are included in `[instrumentors]` but do not have individual extras.
 
 ## Configuration
 

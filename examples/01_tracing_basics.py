@@ -4,7 +4,7 @@ Shows how to register the SDK and trace custom functions
 with @workflow, @task, @agent, and @tool decorators.
 """
 
-from opensearch_genai_sdk import agent, register, task, tool, workflow
+from opensearch_genai_sdk_py import agent, register, task, tool, workflow
 
 # --- Setup ---
 # Local Data Prepper

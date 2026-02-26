@@ -3,11 +3,14 @@
 Sets up a TracerProvider with InMemorySpanExporter so tests can capture
 and assert on spans without a real collector.
 
-A single TracerProvider is shared across the entire test session because
-the OTEL SDK's ProxyTracer caches the real tracer on first use and does
-not re-resolve when the global provider changes. By keeping one provider
-alive for the whole session and clearing the exporter between tests we
-avoid this caching issue entirely.
+A single TracerProvider is shared across the entire test session.
+The exporter is cleared before and after every test via the autouse
+_clear_spans fixture so tests never see each other's spans.
+
+Because the SDK decorators fetch trace.get_tracer() at call time (not at
+decoration/import time), the global provider set here is always resolved
+correctly when a decorated function is invoked — no private API hacks
+required.
 """
 
 import pytest
@@ -23,11 +26,6 @@ _provider = TracerProvider(
     resource=Resource.create({"service.name": "test-service"}),
 )
 _provider.add_span_processor(SimpleSpanProcessor(_exporter))
-
-# Allow setting the global provider (only succeeds the first time the
-# module is imported; that is fine because it is process-wide).
-trace._TRACER_PROVIDER_SET_ONCE._done = False
-trace._TRACER_PROVIDER = None
 trace.set_tracer_provider(_provider)
 
 

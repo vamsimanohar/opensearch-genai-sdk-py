@@ -36,7 +36,7 @@ import sys
 
 from opentelemetry import trace as otel_trace
 
-from opensearch_genai_sdk import agent, register, score, tool, workflow
+from opensearch_genai_sdk_py import agent, register, score, tool, workflow
 
 # ---------------------------------------------------------------------------
 # 1. Point SDK at the local OTEL Collector

@@ -82,7 +82,7 @@ jobs:
 
         # Basic smoke test
         pip install dist/*.whl
-        python -c "import opensearch_genai_sdk; print('Package imports successfully')"
+        python -c "import opensearch_genai_sdk_py; print('Package imports successfully')"
 
     - name: Publish to Test PyPI
       if: github.event_name == 'workflow_dispatch'

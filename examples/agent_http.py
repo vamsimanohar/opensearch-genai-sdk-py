@@ -13,7 +13,7 @@ import time
 
 from opentelemetry import trace
 
-from opensearch_genai_sdk import agent, register, score, task, tool, workflow
+from opensearch_genai_sdk_py import agent, register, score, task, tool, workflow
 
 # --- register() with HTTP endpoint ---
 register(

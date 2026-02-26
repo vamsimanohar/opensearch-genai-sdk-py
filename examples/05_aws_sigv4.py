@@ -6,7 +6,7 @@ you must specify auth="sigv4" to enable SigV4 signing for OTLP requests.
 Requires: pip install opensearch-genai-sdk-py[aws]
 """
 
-from opensearch_genai_sdk import register, score, workflow
+from opensearch_genai_sdk_py import register, score, workflow
 
 # --- AWS-hosted OpenSearch Ingestion (OSIS) ---
 # SigV4 signing must be explicitly enabled with auth="sigv4"
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # What happens under the hood:
     #
-    # 1. register() sees auth="sigv4" and creates SigV4OTLPSpanExporter
+    # 1. register() sees auth="sigv4" and creates AWSSigV4OTLPExporter
     # 2. Every export() call signs the request with AWS credentials:
     #    - Authorization: AWS4-HMAC-SHA256 Credential=...
     #    - X-Amz-Date: 20240101T000000Z
