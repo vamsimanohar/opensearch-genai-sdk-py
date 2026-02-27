@@ -65,12 +65,14 @@ class _SigV4AuthSession(requests.Session):
         )
         signer.add_auth(aws_request)
 
-        # Merge SigV4 auth headers into the headers that will be sent.
+        # Merge all SigV4 headers into the headers that will be sent.
+        # Copy every header botocore added (Authorization, X-Amz-Date,
+        # X-Amz-Security-Token, X-Amz-Content-Sha256, etc.) — OSIS requires
+        # X-Amz-Content-Sha256 and will drop the connection if it is missing.
         if headers is None:
             headers = {}
-        for key in ("Authorization", "X-Amz-Date", "X-Amz-Security-Token"):
-            value = aws_request.headers.get(key)
-            if value:
+        for key, value in aws_request.headers.items():
+            if key.lower() != "content-type":  # already set by the OTLP exporter
                 headers[key] = value
 
         return super().request(method=method, url=url, *args, data=data, headers=headers, **kwargs)
